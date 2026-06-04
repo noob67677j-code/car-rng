@@ -427,7 +427,7 @@
                     <option value="cheap">Сначала дешевые</option>
                 </select>
             </div>
-            <button class="btn-sell-all" onclick="sellAllInventory()">🔥 СЖЕЧЬ ВСЮ БАЗУ ДАННЫХ</button>
+            <button class="btn-sell-all" onclick="sellAllInventory()">🔥 ПРОДАТЬ ВСЁ</button>
         </div>
 
         <div class="inventory-list" id="inventoryContainer"></div>
@@ -499,12 +499,22 @@
         };
 
         const PHRASES_POOL = [
-            { name: "Common Word", chance: 1/2, text: "1 из 2", price: 5, color: "#9ea4b0", fx: "", weight: 2 },
-            { name: "sixseven", chance: 1/7, text: "1 из 7", price: 20, color: "#00f5d4", fx: "", weight: 7 },
-            { name: "Aboba Custom", chance: 1/25, text: "1 из 25", price: 75, color: "#00b4d8", fx: "effect-pulse", weight: 25 },
-            { name: "Python Power", chance: 1/150, text: "1 из 150", price: 450, color: "#9d4edd", fx: "effect-glitch", weight: 150 },
-            { name: "Grandmaster", chance: 1/2000, text: "1 из 2 000", price: 6000, color: "#ff5c5c", fx: "effect-fire", weight: 2000 },
-            { name: "Script God", chance: 1/50000, text: "1 in 50 000", price: 150000, color: "#ffbe0b", fx: "effect-rainbow", weight: 50000 }
+            { name: "простая фраза", chance: 1/2, text: "1 из 2", price: 5, color: "#9ea4b0", fx: "", weight: 2 },
+            { name: "жиза", chance: 1/3, text: "1 из 3", price: 5, color: "#9ea4b0", fx: "", weight: 3 },
+            { name: "лол", chance: 1/4, text: "1 из 4", price: 5, color: "#9ea4b0", fx: "", weight: 4 },
+            { name: "кринж", chance: 1/5, text: "1 из 5", price: 5, color: "#9ea4b0", fx: "", weight: 5 },
+            { name: "хз", chance: 1/6, text: "1 из 6", price: 5, color: "#9ea4b0", fx: "", weight: 6 },
+            { name: "шо", chance: 1/7, text: "1 из 7", price: 5, color: "#9ea4b0", fx: "", weight: 7 },
+            { name: "пон", chance: 1/8, text: "1 из 8", price: 5, color: "#9ea4b0", fx: "", weight: 8 },
+            { name: "кек", chance: 1/9, text: "1 из 9", price: 7, color: "#9ea4b0", fx: "", weight: 9 },
+            { name: "хех", chance: 1/10, text: "1 из 10", price: 10, color: "#9ea4b0", fx: "", weight: 10 },
+            { name: "попа", chance: 1/25, text: "1 из 25", price: 25, color: "#66bb6a", fx: "", weight: 25 },
+            { name: "отказано", chance: 1/50, text: "1 из 50", price: 50, color: "#66bb6a", fx: "", weight: 50 },
+            { name: "шо ты лысый", chance: 1/75, text: "1 из 75", price: 75, color: "#66bb6a", fx: "", weight: 75 },
+            { name: "пепе шнене", chance: 1/250, text: "1 из 250", price: 250, color: "#ab47bc", fx: "effect-pulse", weight: 250 },
+            { name: "жырный", chance: 1/750, text: "1 из 750", price: 750, color: "#ab47bc", fx: "effect-glitch", weight: 750 },
+            { name: "просто босс", chance: 1/2000, text: "1 из 2 000", price: 6000, color: "#ffca28", fx: "effect-fire", weight: 2000 },
+            { name: "sixseven", chance: 1/50000, text: "1 in 50 000", price: 150000, color: "#ffca28", fx: "effect-rainbow", weight: 50000 }
         ];
 
         let gameState = {
@@ -839,15 +849,15 @@
         }
 
         function renderCraftRecipes() {
-            let countSix = countItemsInInventory("sixseven");
-            let countAboba = countItemsInInventory("Aboba Custom");
+            let countSix = countItemsInInventory("жиза");
+            let countAboba = countItemsInInventory("отказано");
 
             const reqSix = document.getElementById('req_sixseven');
             const reqAboba = document.getElementById('req_aboba');
             const btnCraftSpeed = document.getElementById('btn_craft_speed');
             const btnCraftLuck = document.getElementById('btn_craft_luck');
 
-            reqSix.innerText = `sixseven (${countSix}/3)`;
+            reqSix.innerText = `жиза (${countSix}/3)`;
             reqSix.style.color = countSix >= 3 ? "var(--accent-cyan)" : "#ff5c5c";
             if(countSix >= 3) {
                 btnCraftSpeed.className = "btn-upgrade available"; btnCraftSpeed.innerText = "Запустить Квантовый Синтез";
@@ -855,7 +865,7 @@
                 btnCraftSpeed.className = "btn-upgrade not-available"; btnCraftSpeed.innerText = "Недостаточно ядер фраз";
             }
 
-            reqAboba.innerText = `Aboba Custom (${countAboba}/2)`;
+            reqAboba.innerText = `отказано (${countAboba}/2)`;
             reqAboba.style.color = countAboba >= 2 ? "var(--accent-cyan)" : "#ff5c5c";
             if(countAboba >= 2) {
                 btnCraftLuck.className = "btn-upgrade available"; btnCraftLuck.innerText = "Запустить Квантовый Синтез";
@@ -866,25 +876,25 @@
 
         function craftModifier(type) {
             if (type === 'speed') {
-                let count = countItemsInInventory("sixseven");
+                let count = countItemsInInventory("жиза");
                 if (count >= 3) {
                     AudioFX.playEpicWin();
                     // Удаляем ровно 3 штуки из инвентаря
                     let removed = 0;
                     gameState.inventory = gameState.inventory.filter(item => {
-                        if (item.name === "sixseven" && removed < 3) { removed++; return false; }
+                        if (item.name === "жиза" && removed < 3) { removed++; return false; }
                         return true;
                     });
                     gameState.buffs.speed = (gameState.buffs.speed || 0) + 1;
                     tg.showAlert("Синтез завершен! Получен: Матричный Ускоритель [x1]");
                 }
             } else if (type === 'luck') {
-                let count = countItemsInInventory("Aboba Custom");
+                let count = countItemsInInventory("отказано");
                 if (count >= 2) {
                     AudioFX.playEpicWin();
                     let removed = 0;
                     gameState.inventory = gameState.inventory.filter(item => {
-                        if (item.name === "Aboba Custom" && removed < 2) { removed++; return false; }
+                        if (item.name === "отказано" && removed < 2) { removed++; return false; }
                         return true;
                     });
                     gameState.buffs.luck = (gameState.buffs.luck || 0) + 1;
@@ -1058,7 +1068,7 @@
 
         function sellAllInventory() {
             if (gameState.inventory.length === 0) return;
-            tg.showConfirm("Вы точно хотите продать ВСЁ из инвенторя?", (confirmed) => {
+            tg.showConfirm("Вы точно хотите продать ВСЁ из инвентаря?", (confirmed) => {
                 if (confirmed) {
                     AudioFX.playSell();
                     let totalIncome = 0;
