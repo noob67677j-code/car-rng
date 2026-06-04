@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Phrases RNG • Craft & Speed Update</title>
+    <title>Phrases RNG • Leaderboard Update</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -130,9 +130,8 @@
             justify-content: space-between;
             margin-bottom: 4px;
         }
-        .super-label.ready { color: var(--accent-gold); }
 
-        /* Вкладки навигации */
+        /* Таб-бар с 5 кнопками теперь */
         .tab-bar {
             position: fixed;
             bottom: 16px; left: 16px; right: 16px;
@@ -149,20 +148,20 @@
         }
         .tab-btn {
             background: none; border: none; color: #525866;
-            font-size: 11px; font-weight: 600; cursor: pointer;
-            display: flex; flex-direction: column; align-items: center; gap: 4px; width: 23%;
+            font-size: 10px; font-weight: 600; cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; gap: 4px; width: 19%;
         }
-        .tab-btn .icon { font-size: 20px; opacity: 0.5; transition: transform 0.2s; }
+        .tab-btn .icon { font-size: 18px; opacity: 0.5; transition: transform 0.2s; }
         .tab-btn.active { color: var(--text-main); }
         .tab-btn.active .icon {
-            opacity: 1; transform: scale(1.2);
+            opacity: 1; transform: scale(1.15);
             filter: drop-shadow(0 0 10px var(--accent-purple));
         }
         .tab-content { display: none; }
         .tab-content.active { display: block; animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Основная зона ролла */
+        /* Зона Ролла */
         .roll-area {
             position: relative;
             min-height: 320px;
@@ -176,143 +175,80 @@
             justify-content: center;
             align-items: center;
             box-shadow: inset 0 0 30px rgba(0,0,0,0.5);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        
-        .roll-area.active-roll {
-            border-color: rgba(0, 245, 212, 0.3);
-            box-shadow: 0 0 40px rgba(0, 245, 212, 0.08), inset 0 0 20px rgba(0, 245, 212, 0.05);
-        }
-        .roll-area.super-active-roll {
-            border-color: rgba(255, 0, 85, 0.5);
-            box-shadow: 0 0 50px rgba(255, 0, 85, 0.15);
-        }
-
-        .phrase-display {
-            font-size: 36px;
-            font-weight: 900;
-            margin: 10px 0;
-            min-height: 60px;
-            letter-spacing: -0.5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.15s;
-        }
-        .rarity-display {
-            font-size: 11px;
-            color: #525866;
-            min-height: 20px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-weight: 800;
-            margin-bottom: 24px;
-        }
-        
+        .phrase-display { font-size: 36px; font-weight: 900; margin: 10px 0; min-height: 60px; display: flex; align-items: center; justify-content: center; }
+        .rarity-display { font-size: 11px; color: #525866; min-height: 20px; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; margin-bottom: 24px; }
         .control-box { display: flex; flex-direction: column; gap: 10px; width: 90%; align-items: center; }
         
         .btn-roll {
             background: linear-gradient(135deg, #1f242f 0%, #0f1219 100%);
             color: white; border: 1px solid rgba(255,255,255,0.08);
             padding: 18px 32px; border-radius: 20px;
-            font-size: 15px; font-weight: 800; letter-spacing: 0.5px; cursor: pointer;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            transition: all 0.1s ease; width: 100%;
+            font-size: 15px; font-weight: 800; cursor: pointer; width: 100%;
         }
-        .btn-roll:active { transform: scale(0.97); }
-        .btn-roll.super-ready {
-            background: linear-gradient(135deg, #ff0055 0%, #7b2cbf 100%);
-            box-shadow: 0 0 25px rgba(255, 0, 85, 0.4);
-            border: none;
-        }
-
-        .btn-autoroll {
-            background: rgba(255, 255, 255, 0.03); color: #8a92a6;
-            border: 1px solid var(--border-color); padding: 12px 20px; border-radius: 14px;
-            font-size: 12px; font-weight: 700; letter-spacing: 1px; cursor: pointer;
-            transition: all 0.2s; width: 75%;
-        }
-        .btn-autoroll.active {
-            background: rgba(255, 190, 11, 0.1); color: var(--accent-gold);
-            border-color: rgba(255, 190, 11, 0.3); box-shadow: 0 0 15px rgba(255, 190, 11, 0.1);
-        }
+        .btn-roll.super-ready { background: linear-gradient(135deg, #ff0055 0%, #7b2cbf 100%); border: none; }
+        .btn-autoroll { background: rgba(255, 255, 255, 0.03); color: #8a92a6; border: 1px solid var(--border-color); padding: 12px 20px; border-radius: 14px; font-size: 12px; font-weight: 700; width: 75%; cursor: pointer; }
+        .btn-autoroll.active { background: rgba(255, 190, 11, 0.1); color: var(--accent-gold); border-color: rgba(255, 190, 11, 0.3); }
         
-        .rolling { animation: matrixBlur 0.06s infinite alternate; }
-        @keyframes matrixBlur { 
-            from { filter: blur(2px) brightness(1.3); transform: scale(0.96); } 
-            to { filter: blur(4px) brightness(0.7); transform: scale(1.04); } 
-        }
-
         .action-container { display: none; gap: 12px; width: 95%; }
-        .btn {
-            border: none; padding: 16px 16px; border-radius: 18px;
-            font-weight: 700; cursor: pointer; width: 100%; font-size: 14px; transition: all 0.2s;
-        }
+        .btn { border: none; padding: 16px 16px; border-radius: 18px; font-weight: 700; cursor: pointer; width: 100%; font-size: 14px; }
         .btn-sell { background: rgba(239, 68, 68, 0.08); color: #ff5c5c; border: 1px solid rgba(239, 68, 68, 0.15); }
-        .btn-keep { background: white; color: black; box-shadow: 0 6px 20px rgba(255,255,255,0.15); }
+        .btn-keep { background: white; color: black; }
 
-        /* Эффекты редкостей */
-        .effect-pulse { animation: auraPulse 1.5s infinite alternate; }
-        @keyframes auraPulse {
-            0% { transform: scale(1); filter: drop-shadow(0 0 4px rgba(0,180,216,0.3)); }
-            100% { transform: scale(1.05); filter: drop-shadow(0 0 16px rgba(0,180,216,0.7)); }
-        }
-        .effect-glitch { animation: auraGlitch 0.25s infinite; }
-        @keyframes auraGlitch {
-            0% { transform: translate(0); text-shadow: 3px -1px #ff0055, -3px 1px #00f5d4; }
-            50% { transform: translate(1px, -1px); text-shadow: -2px 2px #ff0055, 2px -2px #00f5d4; }
-            100% { transform: translate(0); }
-        }
-        .effect-fire { animation: auraFire 1.2s infinite alternate; }
-        @keyframes auraFire {
-            0% { text-shadow: 0 0 6px #fff, 0 -4px 10px #ff5c5c, 0 -10px 20px #ff2a2a; }
-            100% { text-shadow: 0 0 8px #fff, 0 -8px 16px #ff7a7a, 0 -16px 26px #ff5c5c; }
-        }
-        .effect-rainbow { animation: auraRainbow 3s linear infinite; }
-        @keyframes auraRainbow {
-            0%, 100% { color: #ffbe0b; filter: drop-shadow(0 0 12px #ffbe0b); }
-            33% { color: #00f5d4; filter: drop-shadow(0 0 12px #00f5d4); }
-            66% { color: #ff007f; filter: drop-shadow(0 0 12px #ff007f); }
-        }
+        .rolling { animation: matrixBlur 0.06s infinite alternate; }
+        @keyframes matrixBlur { from { filter: blur(2px) brightness(1.3); } to { filter: blur(4px) brightness(0.7); } }
 
-        /* Инвентарь и бусты */
-        .inventory-controls {
-            background: rgba(255, 255, 255, 0.02); padding: 12px; border-radius: 16px;
-            border: 1px solid var(--border-color); margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px;
+        /* Стили Лидерборда */
+        .leaderboard-list {
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: 24px; padding: 8px; display: flex; flex-direction: column; gap: 4px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
         }
-        .sort-row { display: flex; justify-content: space-between; align-items: center; }
-        .sort-select { background: #14161c; color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 600; }
-        .btn-sell-all { background: rgba(239, 68, 68, 0.12); color: #ff5c5c; border: 1px solid rgba(239, 68, 68, 0.2); padding: 12px; border-radius: 12px; font-weight: 700; font-size: 12px; cursor: pointer; width: 100%; }
-
-        .inventory-list { display: flex; flex-direction: column; gap: 8px; width: 100%; }
-        .inv-item { display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); border: 1px solid var(--border-color); padding: 14px 18px; border-radius: 18px; }
-        .btn-inv-sell { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); color: var(--accent-gold); padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 700; }
-
-        /* Под-секция Модификаторов */
-        .buffs-section {
-            background: rgba(157, 78, 221, 0.05); border: 1px dashed rgba(157, 78, 221, 0.2);
-            padding: 14px; border-radius: 20px; margin-bottom: 20px; text-align: left;
+        .leader-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 16px; border-radius: 16px; background: rgba(255,255,255,0.01);
+            border: 1px solid transparent;
         }
-        .buff-item {
-            display: flex; justify-content: space-between; align-items: center;
-            background: rgba(0,0,0,0.3); padding: 10px 14px; border-radius: 12px; margin-top: 8px;
-            border: 1px solid rgba(255,255,255,0.03);
-        }
-        .btn-use-buff { background: var(--accent-purple); color: #fff; border: none; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; }
-        .btn-use-buff.active-now { background: var(--accent-cyan); color: #000; }
+        .leader-item.top-1 { background: linear-gradient(90deg, rgba(255,190,11,0.08), transparent); border-color: rgba(255,190,11,0.15); }
+        .leader-item.top-2 { background: linear-gradient(90deg, rgba(0,245,212,0.06), transparent); border-color: rgba(0,245,212,0.1); }
+        .leader-rank { font-weight: 900; font-size: 14px; width: 28px; text-align: left; }
+        .leader-name { font-weight: 700; font-size: 14px; flex-grow: 1; text-align: left; color: #e2e8f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .leader-score { font-weight: 800; font-size: 14px; color: var(--accent-gold); }
+        .loading-text { color: var(--text-muted); font-size: 13px; padding: 40px 0; }
 
-        /* Прокачка и Крафт */
+        /* Инвентарь и Улучшения */
         .tree-container { display: flex; flex-direction: column; gap: 14px; }
         .upgrade-node { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px; padding: 18px; text-align: left; }
         .upgrade-title { font-weight: 700; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
         .lvl-badge { background: rgba(0,245,212,0.06); color: var(--accent-cyan); padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; border: 1px solid rgba(0,245,212,0.1); }
-        .btn-upgrade { width: 100%; padding: 14px; border-radius: 14px; font-weight: 700; font-size: 13px; border: none; margin-top: 12px;}
+        .btn-upgrade { width: 100%; padding: 14px; border-radius: 14px; font-weight: 700; font-size: 13px; border: none; margin-top: 12px; }
         .btn-upgrade.available { background: var(--text-main); color: #000; cursor: pointer; }
         .btn-upgrade.not-available { background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.15); }
         
         .craft-recipe { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px; padding: 18px; text-align: left; margin-bottom: 12px;}
         .recipe-req { font-size: 12px; color: #8a92a6; margin: 6px 0 12px 0; }
         .recipe-req span { font-weight: 700; }
+
+        .inventory-list { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+        .inv-item { display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); border: 1px solid var(--border-color); padding: 14px 18px; border-radius: 18px; }
+        .btn-inv-sell { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); color: var(--accent-gold); padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 700; }
+        .buffs-section { background: rgba(157, 78, 221, 0.05); border: 1px dashed rgba(157, 78, 221, 0.2); padding: 14px; border-radius: 20px; margin-bottom: 20px; text-align: left; }
+        .buff-item { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 10px 14px; border-radius: 12px; margin-top: 8px; border: 1px solid rgba(255,255,255,0.03); }
+        .btn-use-buff { background: var(--accent-purple); color: #fff; border: none; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; }
+        .inventory-controls { background: rgba(255, 255, 255, 0.02); padding: 12px; border-radius: 16px; border: 1px solid var(--border-color); margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px; }
+        .sort-row { display: flex; justify-content: space-between; align-items: center; }
+        .sort-select { background: #14161c; color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 6px 10px; font-size: 12px; }
+        .btn-sell-all { background: rgba(239, 68, 68, 0.12); color: #ff5c5c; border: 1px solid rgba(239, 68, 68, 0.2); padding: 12px; border-radius: 12px; font-weight: 700; font-size: 12px; cursor: pointer; width: 100%; }
+
+        /* Эффекты ауры фраз */
+        .effect-pulse { animation: auraPulse 1.5s infinite alternate; }
+        @keyframes auraPulse { 0% { transform: scale(1); } 100% { transform: scale(1.05); filter: drop-shadow(0 0 12px rgba(0,180,216,0.6)); } }
+        .effect-glitch { animation: auraGlitch 0.25s infinite; }
+        @keyframes auraGlitch { 0% { text-shadow: 2px -1px #ff0055, -2px 1px #00f5d4; } 50% { text-shadow: -1px 1px #ff0055, 1px -1px #00f5d4; } 100% { text-shadow: 0px 0px #fff; } }
+        .effect-fire { animation: auraFire 1.2s infinite alternate; }
+        @keyframes auraFire { 0% { text-shadow: 0 0 4px #fff, 0 -3px 8px #ff5c5c; } 100% { text-shadow: 0 0 8px #fff, 0 -8px 18px #ff2a2a; } }
+        .effect-rainbow { animation: auraRainbow 3s linear infinite; }
+        @keyframes auraRainbow { 0%, 100% { color: #ffbe0b; } 33% { color: #00f5d4; } 66% { color: #ff007f; } }
     </style>
 </head>
 <body>
@@ -328,7 +264,6 @@
             <div style="font-size: 12px; color: #8a92a6;">Сборки: <span id="invCount" style="color: #fff; font-weight:700;">0</span></div>
         </div>
 
-        <!-- Квантовая шкала -->
         <div class="super-charge-container">
             <div class="super-label">
                 <span id="superTitleText">Сверхзаряд Ядра</span>
@@ -349,19 +284,14 @@
     <div id="tab_main" class="tab-content active">
         <h1>Phrases RNG</h1>
         <p>Сверхчистая генерация квантовых фраз</p>
-        
-        <!-- Плашки активных временных баффов -->
         <div id="activeBuffsAlert" style="margin-bottom:12px; display:none; gap:6px; justify-content:center; flex-wrap:wrap;"></div>
-
         <div class="roll-area" id="rollArea">
             <div class="phrase-display" id="phraseDisplay">Ready</div>
             <div class="rarity-display" id="rarityDisplay">Нажмите для калибровки</div>
-            
             <div class="control-box" id="controlBox">
                 <button class="btn-roll" id="rollBtn" onclick="startRngRoll()">ГЕНЕРИРОВАТЬ СИГНАЛ</button>
                 <button class="btn-autoroll" id="autoBtn" onclick="toggleAutoRoll()">АВТО-ПОТОК [ВЫКЛ]</button>
             </div>
-            
             <div class="action-container" id="actionContainer">
                 <button class="btn btn-sell" id="sellBtn" onclick="handleRollChoice('sell')">Утилизировать</button>
                 <button class="btn btn-keep" id="keepBtn" onclick="handleRollChoice('keep')">Сохранить Ядро</button>
@@ -379,49 +309,43 @@
                 <div style="font-size: 13px; color: #6c757d; margin-top: 4px;">Смещает матрицу, давая стабильные +0.2x к удаче.</div>
                 <button class="btn-upgrade" id="btn_luck_1" onclick="buyUpgrade('luck')">Модернизировать</button>
             </div>
-            
             <div class="upgrade-node">
                 <div class="upgrade-title"><span>⚡ Разгон Ядра</span><span class="lvl-badge" id="lvl_speed_1">Lvl 0</span></div>
-                <div style="font-size: 13px; color: #6c757d; margin-top: 4px;">Увеличивает частоту процессора, ускоряя анимацию ролла на 15%.</div>
+                <div style="font-size: 13px; color: #6c757d; margin-top: 4px;">Ускоряет базовую частоту генерации импульса на 15%.</div>
                 <button class="btn-upgrade" id="btn_speed_1" onclick="buyUpgrade('speed')">Разогнать</button>
             </div>
         </div>
     </div>
 
-    <!-- ТАБ 3: СИНТЕЗ (КРАФТ) -->
+    <!-- ТАБ 3: СИНТЕЗ -->
     <div id="tab_craft" class="tab-content">
         <h1>Квантовый Синтез</h1>
-        <p>Переплавка обычных фраз в мощные модификаторы</p>
-        
+        <p>Переплавка фраз из хранилища в модификаторы</p>
         <div class="craft-recipe">
-            <div style="font-weight:700; color:var(--accent-purple); font-size:16px;">⚡ Матричный Ускоритель (Буст Скорости)</div>
-            <div style="font-size:12px; color:#cfd2da; margin-top:4px;">Сокращает время генерации сигналов ещё на 40% на 10 роллов.</div>
+            <div style="font-weight:700; color:var(--accent-purple); font-size:16px;">⚡ Матричный Ускоритель</div>
+            <div style="font-size:12px; color:#cfd2da; margin-top:4px;">Сокращает время крутки на 40% на 10 следующих роллов.</div>
             <div class="recipe-req">Требуется: <span id="req_sixseven">sixseven (0/3)</span></div>
-            <button class="btn-upgrade available" id="btn_craft_speed" onclick="craftModifier('speed')">Синтезировать Модуль</button>
+            <button class="btn-upgrade" id="btn_craft_speed" onclick="craftModifier('speed')">Синтезировать Модуль</button>
         </div>
-
         <div class="craft-recipe">
-            <div style="font-weight:700; color:var(--accent-gold); font-size:16px;">🍀 Фокусировщик Удачи (Буст Удачи x1.5)</div>
-            <div style="font-size:12px; color:#cfd2da; margin-top:4px;">Идеально настраивает линзы вероятностей на 10 роллов.</div>
+            <div style="font-weight:700; color:var(--accent-gold); font-size:16px;">🍀 Фокусировщик Удачи</div>
+            <div style="font-size:12px; color:#cfd2da; margin-top:4px;">Повышает конечную удачу на x1.5 на 10 следующих роллов.</div>
             <div class="recipe-req">Требуется: <span id="req_aboba">Aboba Custom (0/2)</span></div>
-            <button class="btn-upgrade available" id="btn_craft_luck" onclick="craftModifier('luck')">Синтезировать Модуль</button>
+            <button class="btn-upgrade" id="btn_craft_luck" onclick="craftModifier('luck')">Синтезировать Модуль</button>
         </div>
     </div>
 
-    <!-- ТАБ 4: ХРАНИЛИЩЕ -->
+    <!-- ТАБ 4: БАЗА (ИНВЕНТАРЬ) -->
     <div id="tab_inventory" class="tab-content">
         <h1>База Данных Фраз</h1>
-        <p>Ваши успешно сохраненные сигналы фраз</p>
-
-        <!-- ОТДЕЛЬНАЯ ВКЛАДКА/СЕКЦИЯ ДЛЯ КРАФТ-БУСТОВ -->
+        <p>Ваши сохраненные квантовые фракталы</p>
         <div class="buffs-section">
-            <div style="font-size: 13px; font-weight:800; color:var(--accent-purple); text-transform:uppercase; letter-spacing:0.5px;">📦 Синтезированные Модификаторы</div>
+            <div style="font-size: 11px; font-weight:800; color:var(--accent-purple); text-transform:uppercase;">📦 Синтезированные Модификаторы</div>
             <div id="buffsContainer"></div>
         </div>
-        
         <div class="inventory-controls">
             <div class="sort-row">
-                <span style="font-size: 12px; color: #6c757d; font-weight: 600;">Сортировка:</span>
+                <span style="font-size: 12px; color: #6c757d;">Сортировка:</span>
                 <select id="sortSelect" class="sort-select" onchange="renderInventory()">
                     <option value="rare">По редкости</option>
                     <option value="cheap">Сначала дешевые</option>
@@ -429,22 +353,32 @@
             </div>
             <button class="btn-sell-all" onclick="sellAllInventory()">🔥 СЖЕЧЬ ВСЮ БАЗУ ДАННЫХ</button>
         </div>
-
         <div class="inventory-list" id="inventoryContainer"></div>
     </div>
 
-    <!-- ТАББАР -->
+    <!-- ТАБ 5: ТОП ИГРОКОВ (НОВЫЙ) -->
+    <div id="tab_leaderboard" class="tab-content">
+        <h1>Квантовый Топ-10</h1>
+        <p>Рейтинг системных архитекторов по балансу монет</p>
+        <div class="leaderboard-list" id="leaderboardContainer">
+            <div class="loading-text">Загрузка матрицы лидеров...</div>
+        </div>
+    </div>
+
+    <!-- ОБНОВЛЕННЫЙ ТАББАР (5 КНОПОК) -->
     <div class="tab-bar">
         <button class="tab-btn active" id="btn_tab_main" onclick="switchTab('main')"><span class="icon">⚡</span><span>Ролл</span></button>
         <button class="tab-btn" id="btn_tab_upgrades" onclick="switchTab('upgrades')"><span class="icon">🔮</span><span>Ядро</span></button>
         <button class="tab-btn" id="btn_tab_craft" onclick="switchTab('craft')"><span class="icon">🛠️</span><span>Синтез</span></button>
         <button class="tab-btn" id="btn_tab_inventory" onclick="switchTab('inventory')"><span class="icon">📦</span><span>База</span></button>
+        <button class="tab-btn" id="btn_tab_leaderboard" onclick="switchTab('leaderboard')"><span class="icon">🏆</span><span>Топ</span></button>
     </div>
 
 <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
+        // ВСТАВЬ СВОЮ ССЫЛКУ ИЗ GOOGLE APPS SCRIPT СЮДА
         const DATABASE_URL = "https://script.google.com/macros/s/AKfycbwgLV--Q71Z1m5WgWs0TKgN51ev4IyTbriO7X_NWh16D51BnwddUB6WqTJ_XFH4xZHU/exec"; 
 
         let currentActiveTab = 'main';
@@ -456,46 +390,12 @@
         const AudioFX = {
             ctx: null,
             init() { if(!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
-            playTick() {
-                this.init(); let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain();
-                osc.type = 'sine'; osc.frequency.setValueAtTime(200 + Math.random() * 600, this.ctx.currentTime);
-                gain.gain.setValueAtTime(0.01, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.04);
-                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.04);
-            },
-            playSwoosh(duration = 0.8) {
-                this.init(); let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain();
-                osc.type = 'triangle'; osc.frequency.setValueAtTime(80, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + duration);
-                gain.gain.setValueAtTime(0.03, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
-                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + duration);
-            },
-            playDropNormal() {
-                this.init(); let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain();
-                osc.type = 'sine'; osc.frequency.setValueAtTime(440, this.ctx.currentTime); osc.frequency.setValueAtTime(659.25, this.ctx.currentTime + 0.06);
-                gain.gain.setValueAtTime(0.04, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.25);
-                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.25);
-            },
-            playEpicWin() {
-                this.init(); let now = this.ctx.currentTime;
-                [261.63, 329.63, 392.00, 523.25, 659.25].forEach((freq, i) => {
-                    let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain();
-                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(freq, now + (i * 0.05));
-                    gain.gain.setValueAtTime(0.02, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
-                    osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(now + 0.6);
-                });
-            },
-            playBassDrop() {
-                this.init(); let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain();
-                osc.type = 'sine'; osc.frequency.setValueAtTime(140, this.ctx.currentTime); osc.frequency.linearRampToValueAtTime(45, this.ctx.currentTime + 0.4);
-                gain.gain.setValueAtTime(0.08, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.4);
-                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.4);
-            },
-            playSell() {
-                this.init(); let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain();
-                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(400, this.ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.12);
-                gain.gain.setValueAtTime(0.03, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.12);
-                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.12);
-            }
+            playTick() { this.init(); let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain(); osc.type = 'sine'; osc.frequency.setValueAtTime(300 + Math.random()*400, this.ctx.currentTime); gain.gain.setValueAtTime(0.008, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.03); osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.03); },
+            playSwoosh(d=0.7) { this.init(); let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain(); osc.type = 'triangle'; osc.frequency.setValueAtTime(90, this.ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(750, this.ctx.currentTime + d); gain.gain.setValueAtTime(0.02, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + d); osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + d); },
+            playDropNormal() { this.init(); let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain(); osc.type = 'sine'; osc.frequency.setValueAtTime(400, this.ctx.currentTime); osc.frequency.setValueAtTime(600, this.ctx.currentTime + 0.05); gain.gain.setValueAtTime(0.03, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.2); osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.2); },
+            playEpicWin() { this.init(); let now = this.ctx.currentTime; [261, 329, 392, 523].forEach((f, i) => { let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain(); osc.type = 'sawtooth'; osc.frequency.setValueAtTime(f, now + (i*0.05)); gain.gain.setValueAtTime(0.015, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5); osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(now + 0.5); }); },
+            playBassDrop() { this.init(); let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain(); osc.type = 'sine'; osc.frequency.setValueAtTime(130, this.ctx.currentTime); osc.frequency.linearRampToValueAtTime(40, this.ctx.currentTime + 0.4); gain.gain.setValueAtTime(0.06, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.4); osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.4); },
+            playSell() { this.init(); let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain(); osc.type = 'sawtooth'; osc.frequency.setValueAtTime(350, this.ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.1); gain.gain.setValueAtTime(0.02, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1); osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.1); }
         };
 
         const PHRASES_POOL = [
@@ -508,67 +408,56 @@
         ];
 
         let gameState = {
-            balance: 0,
-            luckLevel: 0,
-            speedLevel: 0, 
-            totalRolls: 0,
-            superCharge: 0, 
-            inventory: [],
-            buffs: { 
-                speed: 0, 
-                luck: 0  
-            },
-            activeBuffs: {
-                speedRolls: 0,
-                luckRolls: 0
-            }
+            balance: 0, luckLevel: 0, speedLevel: 0, totalRolls: 0, superCharge: 0, inventory: [],
+            buffs: { speed: 0, luck: 0 }, activeBuffs: { speedRolls: 0, luckRolls: 0 }
         };
 
         const upgradeConfig = { baseCost: 100, factor: 1.5 };
 
         function triggerScreenShake() {
-            document.body.style.transform = `translate(${(Math.random()-0.5)*8}px, ${(Math.random()-0.5)*8}px) scale(0.99)`;
-            setTimeout(() => {
-                document.body.style.transform = `translate(${(Math.random()-0.5)*6}px, ${(Math.random()-0.5)*6}px)`;
-                setTimeout(() => document.body.style.transform = 'none', 40);
-            }, 40);
+            document.body.style.transform = `translate(${(Math.random()-0.5)*6}px, ${(Math.random()-0.5)*6}px)`;
+            setTimeout(() => document.body.style.transform = 'none', 50);
         }
 
         function saveGame() {
-            sendSaveToCloud();
             localStorage.setItem(`rng_save_${tg.initDataUnsafe?.user?.id || 12345}`, JSON.stringify(gameState));
-        }
-
-        function sendSaveToCloud() {
+            
             const userId = tg.initDataUnsafe?.user?.id || 12345;
-            const username = tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name || "Кибер Игрок";
+            let username = "CyberPlayer";
+            if (tg.initDataUnsafe?.user) {
+                username = tg.initDataUnsafe.user.username ? "@" + tg.initDataUnsafe.user.username : tg.initDataUnsafe.user.first_name;
+            }
+            
             fetch(DATABASE_URL, {
                 method: "POST", headers: { "Content-Type": "text/plain" },
                 body: JSON.stringify({ action: "save", user_id: userId, username: username, save: gameState })
-            }).catch(e => console.log(e));
+            }).catch(e => console.log("Ошибка сохранения в облако: ", e));
         }
 
         function initGameData() {
             const userId = tg.initDataUnsafe?.user?.id || 12345;
-            fetch(DATABASE_URL.trim(), {
+            
+            // Сначала берем локальный сейв, чтобы моментально отрисовать UI
+            const local = localStorage.getItem(`rng_save_${userId}`);
+            if(local) {
+                gameState = JSON.parse(local);
+                validateStateFields();
+                updateUI();
+            }
+
+            // Затем подтягиваем актуальные данные из облака
+            fetch(DATABASE_URL, {
                 method: "POST", headers: { "Content-Type": "text/plain" },
                 body: JSON.stringify({ action: "load", user_id: userId })
             })
-            .then(res => res.text())
-            .then(text => {
-                const data = JSON.parse(text);
+            .then(res => res.json())
+            .then(data => {
                 if (data.status === "success" && data.save) {
                     gameState = data.save;
                     validateStateFields();
+                    updateUI();
                 }
-                updateUI();
-            })
-            .catch(() => {
-                const local = localStorage.getItem(`rng_save_${userId}`);
-                if(local) gameState = JSON.parse(local);
-                validateStateFields();
-                updateUI();
-            });
+            }).catch(e => console.log("Сбой загрузки из облака, работаем на локальном сейве."));
         }
 
         function validateStateFields() {
@@ -589,9 +478,61 @@
             
             if (tabId === 'inventory') renderInventory();
             if (tabId === 'craft') renderCraftRecipes();
+            if (tabId === 'leaderboard') fetchLeaderboard();
+            
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
             if (tabId !== 'main' && isAutoRollActive) toggleAutoRoll();
             updateUI();
+        }
+
+        /* ПОЛУЧЕНИЕ И ОТРИСОВКА ЛИДЕРБОРДА */
+        function fetchLeaderboard() {
+            const container = document.getElementById('leaderboardContainer');
+            container.innerHTML = `<div class="loading-text">Загрузка матрицы лидеров...</div>`;
+            
+            fetch(DATABASE_URL, {
+                method: "POST", headers: { "Content-Type": "text/plain" },
+                body: JSON.stringify({ action: "get_leaderboard" })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === "success") {
+                    renderLeaderboard(data.leaderboard);
+                } else {
+                    container.innerHTML = `<div class="loading-text" style="color:#ff5c5c;">Не удалось загрузить топ</div>`;
+                }
+            })
+            .catch(() => {
+                container.innerHTML = `<div class="loading-text" style="color:#ff5c5c;">Ошибка сетевого подключения к БД</div>`;
+            });
+        }
+
+        function renderLeaderboard(list) {
+            const container = document.getElementById('leaderboardContainer');
+            container.innerHTML = "";
+            
+            if(!list || list.length === 0) {
+                container.innerHTML = `<div class="loading-text">Таблица пуста. Стань первым!</div>`;
+                return;
+            }
+
+            list.forEach((player, index) => {
+                const item = document.createElement('div');
+                let rankClass = "";
+                let medal = index + 1;
+                
+                if(index === 0) { rankClass = "top-1"; medal = "🥇"; }
+                else if(index === 1) { rankClass = "top-2"; medal = "🥈"; }
+                else if(index === 2) { medal = "🥉"; }
+
+                item.className = `leader-item ${rankClass}`;
+                item.innerHTML = `
+                    <div class="leader-rank">${medal}</div>
+                    <div class="leader-name">${player.username}</div>
+                    <div class="leader-score">${Math.floor(player.balance).toLocaleString('ru-RU')} 💰</div>
+                `;
+                container.appendChild(item);
+            });
         }
 
         function calculateRngDrop(luckMultiplier) {
@@ -615,31 +556,19 @@
 
             controlBox.style.display = 'none';
             actionContainer.style.display = 'none';
-            
             phraseDisplay.className = "phrase-display rolling";
             
             const isSuperRoll = gameState.superCharge >= 100;
-            if (isSuperRoll) {
-                rollArea.className = "roll-area super-active-roll";
-                AudioFX.playSwoosh(1.2);
-            } else {
-                rollArea.className = "roll-area active-roll";
-                AudioFX.playSwoosh(0.7);
-            }
+            rollArea.className = isSuperRoll ? "roll-area super-active-roll" : "roll-area active-roll";
+            AudioFX.playSwoosh(isSuperRoll ? 1.1 : 0.6);
 
             rarityDisplay.innerText = isSuperRoll ? "КВАНТОВЫЙ РАЗРЫВ МАТРИЦЫ..." : "СИНХРОНИЗАЦИЯ ЧАСТОТ...";
 
-            // РАСЧЕТ СКОРОСТИ АНИМАЦИИ КРУТКИ
-            let baseDuration = isSuperRoll ? 1400 : 850;
-            // Срез времени за счёт уровня скорости (макс 60%)
-            let speedModifier = Math.max(0.4, 1 - (gameState.speedLevel * 0.15)); 
+            let baseDuration = isSuperRoll ? 1300 : 800;
+            let speedModifier = Math.max(0.35, 1 - (gameState.speedLevel * 0.15)); 
             let finalDuration = baseDuration * speedModifier;
             
-            // Если активен крафтовый бафф скорости — срезаем ещё 40%
-            if (gameState.activeBuffs.speedRolls > 0) {
-                finalDuration *= 0.6;
-            }
-            // Ограничиваем минимальное время до 150мс, чтобы не ломался визуальный рендер
+            if (gameState.activeBuffs.speedRolls > 0) finalDuration *= 0.6;
             if (finalDuration < 150) finalDuration = 150;
 
             let interval = setInterval(() => {
@@ -647,7 +576,6 @@
                 let temp = PHRASES_POOL[Math.floor(Math.random() * PHRASES_POOL.length)];
                 phraseDisplay.innerText = temp.name;
                 phraseDisplay.style.color = temp.color;
-                phraseDisplay.style.textShadow = 'none';
             }, 60);
 
             setTimeout(() => {
@@ -655,59 +583,41 @@
                 phraseDisplay.classList.remove('rolling');
                 rollArea.className = "roll-area";
 
-                // УМЕНЬШЕНИЕ АКТИВНЫХ БАФФОВ ПОСЛЕ КРУТКИ
                 let craftLuckBonus = 1.0;
                 if(gameState.activeBuffs.luckRolls > 0) {
                     craftLuckBonus = 1.5;
                     gameState.activeBuffs.luckRolls--;
                 }
-                if(gameState.activeBuffs.speedRolls > 0) {
-                    gameState.activeBuffs.speedRolls--;
-                }
+                if(gameState.activeBuffs.speedRolls > 0) gameState.activeBuffs.speedRolls--;
 
                 let baseLuck = 1 + (gameState.luckLevel * 0.2);
                 let finalLuck = (isSuperRoll ? (baseLuck * 5.0) : baseLuck) * craftLuckBonus;
 
                 currentDrop = calculateRngDrop(finalLuck);
-
                 phraseDisplay.innerText = currentDrop.name;
                 phraseDisplay.style.color = currentDrop.color;
                 
-                if(currentDrop.fx) {
-                    phraseDisplay.classList.add(currentDrop.fx);
-                } else {
-                    phraseDisplay.style.textShadow = `0 0 20px ${currentDrop.color}aa`;
-                }
+                if(currentDrop.fx) phraseDisplay.classList.add(currentDrop.fx);
+                else phraseDisplay.style.textShadow = `0 0 20px ${currentDrop.color}aa`;
                 
                 rarityDisplay.innerText = `Индекс Сигнала: ${currentDrop.text}`;
                 gameState.totalRolls++;
 
                 const isRare = currentDrop.weight >= 150; 
-                
                 if (isRare) {
                     AudioFX.playEpicWin();
                     triggerScreenShake();
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                    
-                    if (isAutoRollActive) {
-                        isAutoRollActive = false;
-                        const autoBtn = document.getElementById('autoBtn');
-                        autoBtn.innerText = "АВТО-ПОТОК [ВЫКЛ]";
-                        autoBtn.classList.remove('active');
-                    }
+                    if (isAutoRollActive) toggleAutoRoll();
                 } else {
                     AudioFX.playDropNormal();
                     if (tg.HapticFeedback && !isAutoRollActive) tg.HapticFeedback.impactOccurred('light');
                 }
 
-                if (isSuperRoll) {
-                    gameState.superCharge = 0; 
-                } else {
-                    gameState.superCharge = Math.min(100, gameState.superCharge + 4); 
-                    if (gameState.superCharge >= 100) {
-                        AudioFX.playBassDrop();
-                        triggerScreenShake();
-                    }
+                if (isSuperRoll) gameState.superCharge = 0; 
+                else {
+                    gameState.superCharge = Math.min(100, gameState.superCharge + 4);
+                    if (gameState.superCharge >= 100) { AudioFX.playBassDrop(); triggerScreenShake(); }
                 }
 
                 isRollingRightNow = false;
@@ -717,40 +627,23 @@
 
                 if (isAutoRollActive && !isRare) {
                     actionContainer.style.display = 'flex';
-                    controlBox.style.display = 'none';
-
                     autoTimeoutId = setTimeout(() => {
                         if (isAutoRollActive && currentDrop) {
                             gameState.inventory.push({
-                                id: Date.now() + Math.random(),
-                                name: currentDrop.name,
-                                text: currentDrop.text,
-                                price: currentDrop.price,
-                                color: currentDrop.color,
-                                fx: currentDrop.fx,
-                                weight: currentDrop.weight
+                                id: Date.now() + Math.random(), name: currentDrop.name, text: currentDrop.text,
+                                price: currentDrop.price, color: currentDrop.color, fx: currentDrop.fx, weight: currentDrop.weight
                             });
                             currentDrop = null;
-                            phraseDisplay.className = "phrase-display";
-                            phraseDisplay.style.textShadow = 'none';
-                            
                             actionContainer.style.display = 'none';
                             updateUI();
                             saveGame();
-
-                            if (isAutoRollActive && currentActiveTab === 'main') {
-                                startRngRoll();
-                            } else {
-                                controlBox.style.display = 'flex';
-                            }
+                            if (isAutoRollActive && currentActiveTab === 'main') startRngRoll();
+                            else controlBox.style.display = 'flex';
                         }
-                    }, 1000); 
-
+                    }, 900); 
                 } else {
                     actionContainer.style.display = 'flex';
-                    controlBox.style.display = 'none';
                 }
-                
                 saveGame();
             }, finalDuration);
         }
@@ -758,156 +651,82 @@
         function toggleAutoRoll() {
             AudioFX.playTick();
             const autoBtn = document.getElementById('autoBtn');
-            
             if (!isAutoRollActive) {
                 isAutoRollActive = true;
                 autoBtn.innerText = "АВТО-ПОТОК [ВКЛ]";
                 autoBtn.classList.add('active');
-                
-                if (!isRollingRightNow && !currentDrop) {
-                    startRngRoll();
-                }
+                if (!isRollingRightNow && !currentDrop) startRngRoll();
             } else {
                 isAutoRollActive = false;
                 autoBtn.innerText = "АВТО-ПОТОК [ВЫКЛ]";
                 autoBtn.classList.remove('active');
                 if (autoTimeoutId) clearTimeout(autoTimeoutId);
-                
-                if (!isRollingRightNow && currentDrop) {
-                    document.getElementById('actionContainer').style.display = 'flex';
-                    document.getElementById('controlBox').style.display = 'none';
-                } else if (!isRollingRightNow) {
-                    document.getElementById('actionContainer').style.display = 'none';
-                    document.getElementById('controlBox').style.display = 'flex';
-                }
+                document.getElementById('actionContainer').style.display = currentDrop ? 'flex' : 'none';
+                document.getElementById('controlBox').style.display = currentDrop ? 'none' : 'flex';
             }
         }
 
         function handleRollChoice(choice) {
             if (autoTimeoutId) clearTimeout(autoTimeoutId);
-
             document.getElementById('actionContainer').style.display = 'none';
             document.getElementById('controlBox').style.display = 'flex';
-            
             document.getElementById('phraseDisplay').className = "phrase-display";
             document.getElementById('phraseDisplay').style.textShadow = 'none';
 
             if (!currentDrop) return;
-
-            if (choice === 'sell') {
-                AudioFX.playSell();
-                gameState.balance += currentDrop.price;
-            } else if (choice === 'keep') {
+            if (choice === 'sell') { AudioFX.playSell(); gameState.balance += currentDrop.price; } 
+            else if (choice === 'keep') {
                 AudioFX.playTick();
-                gameState.inventory.push({
-                    id: Date.now() + Math.random(), name: currentDrop.name, text: currentDrop.text,
-                    price: currentDrop.price, color: currentDrop.color, fx: currentDrop.fx, weight: currentDrop.weight
-                });
+                gameState.inventory.push({ id: Date.now() + Math.random(), name: currentDrop.name, text: currentDrop.text, price: currentDrop.price, color: currentDrop.color, fx: currentDrop.fx, weight: currentDrop.weight });
             }
             currentDrop = null;
             updateUI();
             saveGame();
-
-            if (isAutoRollActive && currentActiveTab === 'main') {
-                startRngRoll();
-            }
+            if (isAutoRollActive && currentActiveTab === 'main') startRngRoll();
         }
 
         function buyUpgrade(type) {
             if(type === 'luck') {
                 let cost = Math.floor(upgradeConfig.baseCost * Math.pow(upgradeConfig.factor, gameState.luckLevel));
-                if (gameState.balance >= cost) {
-                    AudioFX.playEpicWin();
-                    gameState.balance -= cost;
-                    gameState.luckLevel++;
-                }
+                if (gameState.balance >= cost) { AudioFX.playEpicWin(); gameState.balance -= cost; gameState.luckLevel++; }
             } else if(type === 'speed') {
                 let cost = Math.floor(upgradeConfig.baseCost * 1.8 * Math.pow(upgradeConfig.factor, gameState.speedLevel));
-                if (gameState.balance >= cost && gameState.speedLevel < 4) { // Макс 4 уровня (+60% скорость)
-                    AudioFX.playEpicWin();
-                    gameState.balance -= cost;
-                    gameState.speedLevel++;
-                }
+                if (gameState.balance >= cost && gameState.speedLevel < 4) { AudioFX.playEpicWin(); gameState.balance -= cost; gameState.speedLevel++; }
             }
-            updateUI();
-            saveGame();
+            updateUI(); saveGame();
         }
 
-        // КРАФТ СИСТЕМА
-        function countItemsInInventory(name) {
-            return gameState.inventory.filter(item => item.name === name).length;
-        }
+        function countItemsInInventory(name) { return gameState.inventory.filter(item => item.name === name).length; }
 
         function renderCraftRecipes() {
             let countSix = countItemsInInventory("sixseven");
             let countAboba = countItemsInInventory("Aboba Custom");
+            document.getElementById('req_sixseven').innerText = `sixseven (${countSix}/3)`;
+            document.getElementById('req_sixseven').style.color = countSix >= 3 ? "var(--accent-cyan)" : "#ff5c5c";
+            document.getElementById('btn_craft_speed').className = countSix >= 3 ? "btn-upgrade available" : "btn-upgrade not-available";
+            document.getElementById('btn_craft_speed').innerText = countSix >= 3 ? "Запустить Синтез" : "Недостаточно ядер фраз";
 
-            const reqSix = document.getElementById('req_sixseven');
-            const reqAboba = document.getElementById('req_aboba');
-            const btnCraftSpeed = document.getElementById('btn_craft_speed');
-            const btnCraftLuck = document.getElementById('btn_craft_luck');
-
-            reqSix.innerText = `sixseven (${countSix}/3)`;
-            reqSix.style.color = countSix >= 3 ? "var(--accent-cyan)" : "#ff5c5c";
-            if(countSix >= 3) {
-                btnCraftSpeed.className = "btn-upgrade available"; btnCraftSpeed.innerText = "Запустить Квантовый Синтез";
-            } else {
-                btnCraftSpeed.className = "btn-upgrade not-available"; btnCraftSpeed.innerText = "Недостаточно ядер фраз";
-            }
-
-            reqAboba.innerText = `Aboba Custom (${countAboba}/2)`;
-            reqAboba.style.color = countAboba >= 2 ? "var(--accent-cyan)" : "#ff5c5c";
-            if(countAboba >= 2) {
-                btnCraftLuck.className = "btn-upgrade available"; btnCraftLuck.innerText = "Запустить Квантовый Синтез";
-            } else {
-                btnCraftLuck.className = "btn-upgrade not-available"; btnCraftLuck.innerText = "Недостаточно ядер фраз";
-            }
+            document.getElementById('req_aboba').innerText = `Aboba Custom (${countAboba}/2)`;
+            document.getElementById('req_aboba').style.color = countAboba >= 2 ? "var(--accent-cyan)" : "#ff5c5c";
+            document.getElementById('btn_craft_luck').className = countAboba >= 2 ? "btn-upgrade available" : "btn-upgrade not-available";
+            document.getElementById('btn_craft_luck').innerText = countAboba >= 2 ? "Запустить Синтез" : "Недостаточно ядер фраз";
         }
 
         function craftModifier(type) {
-            if (type === 'speed') {
-                let count = countItemsInInventory("sixseven");
-                if (count >= 3) {
-                    AudioFX.playEpicWin();
-                    // Удаляем ровно 3 штуки из инвентаря
-                    let removed = 0;
-                    gameState.inventory = gameState.inventory.filter(item => {
-                        if (item.name === "sixseven" && removed < 3) { removed++; return false; }
-                        return true;
-                    });
-                    gameState.buffs.speed = (gameState.buffs.speed || 0) + 1;
-                    tg.showAlert("Синтез завершен! Получен: Матричный Ускоритель [x1]");
-                }
-            } else if (type === 'luck') {
-                let count = countItemsInInventory("Aboba Custom");
-                if (count >= 2) {
-                    AudioFX.playEpicWin();
-                    let removed = 0;
-                    gameState.inventory = gameState.inventory.filter(item => {
-                        if (item.name === "Aboba Custom" && removed < 2) { removed++; return false; }
-                        return true;
-                    });
-                    gameState.buffs.luck = (gameState.buffs.luck || 0) + 1;
-                    tg.showAlert("Синтез завершен! Получен: Фокусировщик Удачи [x1]");
-                }
+            if (type === 'speed' && countItemsInInventory("sixseven") >= 3) {
+                let removed = 0; gameState.inventory = gameState.inventory.filter(item => { if (item.name === "sixseven" && removed < 3) { removed++; return false; } return true; });
+                gameState.buffs.speed = (gameState.buffs.speed || 0) + 1; AudioFX.playEpicWin();
+            } else if (type === 'luck' && countItemsInInventory("Aboba Custom") >= 2) {
+                let removed = 0; gameState.inventory = gameState.inventory.filter(item => { if (item.name === "Aboba Custom" && removed < 2) { removed++; return false; } return true; });
+                gameState.buffs.luck = (gameState.buffs.luck || 0) + 1; AudioFX.playEpicWin();
             }
-            renderCraftRecipes();
-            updateUI();
-            saveGame();
+            renderCraftRecipes(); updateUI(); saveGame();
         }
 
         function activateBuff(type) {
-            AudioFX.playTick();
-            if (type === 'speed' && gameState.buffs.speed > 0) {
-                gameState.buffs.speed--;
-                gameState.activeBuffs.speedRolls = (gameState.activeBuffs.speedRolls || 0) + 10;
-            } else if (type === 'luck' && gameState.buffs.luck > 0) {
-                gameState.buffs.luck--;
-                gameState.activeBuffs.luckRolls = (gameState.activeBuffs.luckRolls || 0) + 10;
-            }
-            renderInventory();
-            updateUI();
-            saveGame();
+            if (type === 'speed' && gameState.buffs.speed > 0) { gameState.buffs.speed--; gameState.activeBuffs.speedRolls = (gameState.activeBuffs.speedRolls || 0) + 10; } 
+            else if (type === 'luck' && gameState.buffs.luck > 0) { gameState.buffs.luck--; gameState.activeBuffs.luckRolls = (gameState.activeBuffs.luckRolls || 0) + 10; }
+            renderInventory(); updateUI(); saveGame();
         }
 
         function updateUI() {
@@ -915,74 +734,29 @@
             document.getElementById('totalRolls').innerText = gameState.totalRolls;
             document.getElementById('invCount').innerText = gameState.inventory.length;
             
-            // Расчет реального отображения удачи на главном экране
-            let displayLuck = (1 + (gameState.luckLevel * 0.2));
-            if (gameState.activeBuffs.luckRolls > 0) displayLuck *= 1.5;
+            let displayLuck = (1 + (gameState.luckLevel * 0.2)) * (gameState.activeBuffs.luckRolls > 0 ? 1.5 : 1);
             document.getElementById('luckDisplay').innerText = `x${displayLuck.toFixed(1)}`;
-            
-            // Отображение скорости в панели статов
-            let visualSpeed = 100 + (gameState.speedLevel * 15);
-            if (gameState.activeBuffs.speedRolls > 0) visualSpeed += 40;
-            document.getElementById('speedStatText').innerText = `${visualSpeed}%`;
+            document.getElementById('speedStatText').innerText = `${(100 + (gameState.speedLevel * 15) + (gameState.activeBuffs.speedRolls > 0 ? 40 : 0))}%`;
 
             document.getElementById('lvl_luck_1').innerText = `Lvl ${gameState.luckLevel}`;
             document.getElementById('lvl_speed_1').innerText = gameState.speedLevel >= 4 ? "MAX Lvl" : `Lvl ${gameState.speedLevel}`;
 
-            // Цены модулей ядра
-            let costLuck = Math.floor(upgradeConfig.baseCost * Math.pow(upgradeConfig.factor, gameState.luckLevel));
-            const btnLuck = document.getElementById('btn_luck_1');
-            if (gameState.balance >= costLuck) {
-                btnLuck.className = "btn-upgrade available"; btnLuck.innerText = `Установить обновление • ${costLuck} 💰`;
-            } else {
-                btnLuck.className = "btn-upgrade not-available"; btnLuck.innerText = `Недостаточно ресурсов • ${costLuck} 💰`;
-            }
-
-            let costSpeed = Math.floor(upgradeConfig.baseCost * 1.8 * Math.pow(upgradeConfig.factor, gameState.speedLevel));
-            const btnSpeed = document.getElementById('btn_speed_1');
-            if(gameState.speedLevel >= 4) {
-                btnSpeed.className = "btn-upgrade not-available"; btnSpeed.innerText = `Максимальный разгон достигнут`;
-            } else if (gameState.balance >= costSpeed) {
-                btnSpeed.className = "btn-upgrade available"; btnSpeed.innerText = `Разогнать шину • ${costSpeed} 💰`;
-            } else {
-                btnSpeed.className = "btn-upgrade not-available"; btnSpeed.innerText = `Недостаточно ресурсов • ${costSpeed} 💰`;
-            }
-
-            // Рендер виджетов активных баффов на главном экране прокрутки
-            const alertBox = document.getElementById('activeBuffsAlert');
-            alertBox.innerHTML = "";
-            let haveAlerts = false;
-            
-            if(gameState.activeBuffs.luckRolls > 0) {
-                haveAlerts = true;
-                alertBox.innerHTML += `<div style="background:rgba(255,190,11,0.15); border:1px solid var(--accent-gold); color:var(--accent-gold); font-size:10px; font-weight:700; padding:4px 8px; border-radius:8px;">🍀 УДАЧА x1.5 [Осталось роллов: ${gameState.activeBuffs.luckRolls}]</div>`;
-            }
-            if(gameState.activeBuffs.speedRolls > 0) {
-                haveAlerts = true;
-                alertBox.innerHTML += `<div style="background:rgba(0,245,212,0.15); border:1px solid var(--accent-cyan); color:var(--accent-cyan); font-size:10px; font-weight:700; padding:4px 8px; border-radius:8px;">⚡ РАЗГОН МАТРИЦЫ [Осталось роллов: ${gameState.activeBuffs.speedRolls}]</div>`;
-            }
+            let alertBox = document.getElementById('activeBuffsAlert');
+            alertBox.innerHTML = ""; let haveAlerts = false;
+            if(gameState.activeBuffs.luckRolls > 0) { haveAlerts = true; alertBox.innerHTML += `<div style="background:rgba(255,190,11,0.15); border:1px solid var(--accent-gold); color:var(--accent-gold); font-size:10px; font-weight:700; padding:4px 8px; border-radius:8px;">🍀 УДАЧА x1.5 [${gameState.activeBuffs.luckRolls}]</div>`; }
+            if(gameState.activeBuffs.speedRolls > 0) { haveAlerts = true; alertBox.innerHTML += `<div style="background:rgba(0,245,212,0.15); border:1px solid var(--accent-cyan); color:var(--accent-cyan); font-size:10px; font-weight:700; padding:4px 8px; border-radius:8px;">⚡ СКОРОСТЬ +40% [${gameState.activeBuffs.speedRolls}]</div>`; }
             alertBox.style.display = haveAlerts ? 'flex' : 'none';
 
-            // Прогресс квантового заряда
-            const bar = document.getElementById('superBar');
-            const sTitle = document.getElementById('superTitleText');
-            const pText = document.getElementById('superProgressText');
-            const rollBtn = document.getElementById('rollBtn');
-
+            let bar = document.getElementById('superBar');
+            document.getElementById('superProgressText').innerText = `${gameState.superCharge}/100`;
             bar.style.width = `${gameState.superCharge}%`;
-            pText.innerText = `${gameState.superCharge}/100`;
-
+            
             if(gameState.superCharge >= 100) {
-                bar.classList.add('charged');
-                sTitle.innerText = "ЯДРО СВЕРХЗАРЯЖЕНО! (Удача х5.0)";
-                sTitle.style.color = "var(--accent-gold)";
-                rollBtn.className = "btn-roll super-ready";
-                rollBtn.innerText = "💥 ВЫПУСТИТЬ СВЕРХЗАРЯД";
+                bar.classList.add('charged'); document.getElementById('superTitleText').innerText = "ЯДРО СВЕРХЗАРЯЖЕНО! (Удача х5.0)";
+                document.getElementById('rollBtn').className = "btn-roll super-ready"; document.getElementById('rollBtn').innerText = "💥 ВЫПУСТИТЬ СВЕРХЗАРЯД";
             } else {
-                bar.classList.remove('charged');
-                sTitle.innerText = "Сверхзаряд Ядра";
-                sTitle.style.color = "#6c757d";
-                rollBtn.className = "btn-roll";
-                rollBtn.innerText = "ГЕНЕРИРОВАТЬ СИГНАЛ";
+                bar.classList.remove('charged'); document.getElementById('superTitleText').innerText = "Сверхзаряд Ядра";
+                document.getElementById('rollBtn').className = "btn-roll"; document.getElementById('rollBtn').innerText = "ГЕНЕРИРОВАТЬ СИГНАЛ";
             }
         }
 
@@ -991,84 +765,31 @@
             const sortType = document.getElementById('sortSelect').value;
             container.innerHTML = "";
 
-            // Сначала рендерим хранилище КРАФТ-модификаторов (Бустов) во вкладке инвентаря
             const buffsContainer = document.getElementById('buffsContainer');
             buffsContainer.innerHTML = "";
-            
-            let bSpeedCount = gameState.buffs.speed || 0;
-            let bLuckCount = gameState.buffs.luck || 0;
+            let bSpeed = gameState.buffs.speed || 0; let bLuck = gameState.buffs.luck || 0;
 
-            if (bSpeedCount === 0 && bLuckCount === 0) {
-                buffsContainer.innerHTML = `<div style="color: #4e5564; font-size: 11px; margin-top:6px;">Модули баффов не созданы. Загляните в меню 'Синтез'.</div>`;
-            } else {
-                if (bSpeedCount > 0) {
-                    buffsContainer.innerHTML += `
-                        <div class="buff-item">
-                            <div>
-                                <span style="font-size:12px; font-weight:700; color:var(--accent-cyan);">Матричный Ускоритель (Запасы: ${bSpeedCount})</span>
-                                <div style="font-size:10px; color:#6c757d;">Дает +10 быстрых квантовых тиков</div>
-                            </div>
-                            <button class="btn-use-buff" onclick="activateBuff('speed')">Запустить</button>
-                        </div>`;
-                }
-                if (bLuckCount > 0) {
-                    buffsContainer.innerHTML += `
-                        <div class="buff-item">
-                            <div>
-                                <span style="font-size:12px; font-weight:700; color:var(--accent-gold);">Фокусировщик Удачи (Запасы: ${bLuckCount})</span>
-                                <div style="font-size:10px; color:#6c757d;">Дает +10 роллов с удачей x1.5</div>
-                            </div>
-                            <button class="btn-use-buff" onclick="activateBuff('luck')">Запустить</button>
-                        </div>`;
-                }
+            if (bSpeed === 0 && bLuck === 0) buffsContainer.innerHTML = `<div style="color: #4e5564; font-size: 11px; margin-top:6px;">Модули пусты. Создайте их во вкладке 'Синтез'.</div>`;
+            else {
+                if (bSpeed > 0) buffsContainer.innerHTML += `<div class="buff-item"><div><span style="font-size:12px; font-weight:700; color:var(--accent-cyan);">Матричный Ускоритель (${bSpeed} шт)</span></div><button class="btn-use-buff" onclick="activateBuff('speed')">Старт</button></div>`;
+                if (bLuck > 0) buffsContainer.innerHTML += `<div class="buff-item"><div><span style="font-size:12px; font-weight:700; color:var(--accent-gold);">Фокусировщик Удачи (${bLuck} шт)</span></div><button class="btn-use-buff" onclick="activateBuff('luck')">Старт</button></div>`;
             }
             
-            if (gameState.inventory.length === 0) {
-                container.innerHTML = `<div style="color: #4e5564; margin-top: 30px; font-size: 13px;">Хранилище пусто</div>`;
-                return;
-            }
+            if (gameState.inventory.length === 0) { container.innerHTML = `<div style="color: #4e5564; margin-top: 30px; font-size: 13px;">Хранилище пусто</div>`; return; }
 
-            let sortedInventory = [...gameState.inventory];
-            if (sortType === 'rare') {
-                sortedInventory.sort((a, b) => (b.weight || 0) - (a.weight || 0));
-            } else if (sortType === 'cheap') {
-                sortedInventory.sort((a, b) => a.price - b.price);
-            }
+            let sorted = [...gameState.inventory];
+            if (sortType === 'rare') sorted.sort((a, b) => b.weight - a.weight);
+            else if (sortType === 'cheap') sorted.sort((a, b) => a.price - b.price);
 
-            sortedInventory.forEach(item => {
+            sorted.forEach(item => {
                 const div = document.createElement('div'); div.className = 'inv-item';
-                const fxClass = item.fx ? item.fx : "";
-                div.innerHTML = `
-                    <div style="text-align: left;">
-                        <div class="inv-name ${fxClass}" style="color: ${item.color}; font-weight: 800; font-size:15px;">${item.name}</div>
-                        <div style="font-size: 11px; color: #4e5564; margin-top:2px;">${item.text}</div>
-                    </div>
-                    <button class="btn-inv-sell" onclick="sellFromInventory(${item.id}, ${item.price})">💰 ${item.price}</button>
-                `;
+                div.innerHTML = `<div style="text-align: left;"><div class="inv-name ${item.fx||''}" style="color: ${item.color}; font-weight: 800;">${item.name}</div><div style="font-size: 11px; color: #4e5564;">${item.text}</div></div><button class="btn-inv-sell" onclick="sellFromInventory(${item.id}, ${item.price})">💰 ${item.price}</button>`;
                 container.appendChild(div);
             });
         }
 
-        function sellFromInventory(itemId, price) {
-            AudioFX.playSell();
-            gameState.inventory = gameState.inventory.filter(i => i.id !== itemId);
-            gameState.balance += price;
-            renderInventory(); updateUI(); saveGame();
-        }
-
-        function sellAllInventory() {
-            if (gameState.inventory.length === 0) return;
-            tg.showConfirm("Вы действительно хотите утилизировать абсолютно ВСЕ фразы из вашего Хранилища?", (confirmed) => {
-                if (confirmed) {
-                    AudioFX.playSell();
-                    let totalIncome = 0;
-                    gameState.inventory.forEach(item => totalIncome += item.price);
-                    gameState.balance += totalIncome;
-                    gameState.inventory = [];
-                    renderInventory(); updateUI(); saveGame();
-                }
-            });
-        }
+        function sellFromInventory(itemId, price) { AudioFX.playSell(); gameState.inventory = gameState.inventory.filter(i => i.id !== itemId); gameState.balance += price; renderInventory(); updateUI(); saveGame(); }
+        function sellAllInventory() { if (gameState.inventory.length === 0) return; tg.showConfirm("Вы точно хотите стереть все фразы из Базы?", (c) => { if (c) { AudioFX.playSell(); let income = 0; gameState.inventory.forEach(i => income += i.price); gameState.balance += income; gameState.inventory = []; renderInventory(); updateUI(); saveGame(); } }); }
 
         window.onload = function() { initGameData(); };
 </script>
