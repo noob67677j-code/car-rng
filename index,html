@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phrases RNG</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: #181818;
+            --container-bg: #242424;
+            --text-color: #ffffff;
+            --accent-color: #0088cc;
+            --rarity-common: #aaaaaa;
+            --rarity-rare: #1eff00;
+            --rarity-epic: #0070dd;
+            --rarity-legendary: #ff8000;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: none;
+        }
+
+        .header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--container-bg);
+            padding: 10px 15px;
+            border-radius: 12px;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+
+        .balance {
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .main-card {
+            width: 100%;
+            max-width: 350px;
+            background: var(--container-bg);
+            border-radius: 20px;
+            padding: 30px 20px;
+            text-align: center;
+            box-sizing: border-box;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .display-phrase {
+            font-size: 28px;
+            font-weight: 800;
+            margin: 20px 0 5px 0;
+            min-height: 40px;
+            transition: transform 0.3s ease;
+        }
+
+        .display-rarity {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 20px;
+            min-height: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn {
+            background: var(--accent-color);
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .action-buttons {
+            display: none;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-sell { background: #d9534f; }
+        .btn-keep { background: #5cb85c; }
+
+        /* Простенькая анимация крутки */
+        .rolling {
+            animation: blurRoll 0.1s infinite alternate;
+        }
+
+        @keyframes blurRoll {
+            from { filter: blur(1px); transform: scale(0.98); }
+            to { filter: blur(4px); transform: scale(1.02); }
+        }
+
+        /* Раздел инвентаря */
+        .inventory-section {
+            width: 100%;
+            max-width: 350px;
+            background: var(--container-bg);
+            border-radius: 15px;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        .inventory-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+        }
+
+        .inventory-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .inv-item {
+            display: flex;
+            justify-content: space-between;
+            background: rgba(255,255,255,0.05);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div id="username">Игрок</div>
+        <div class="balance">💰 <span id="balance-val">0</span></div>
+    </div>
+
+    <div class="main-card">
+        <div class="display-phrase" id="phrase-display">Phrases RNG</div>
+        <div class="display-rarity" id="rarity-display">Нажми крутить!</div>
+        
+        <button class="btn" id="roll-btn" onclick="startRoll()">КРУТИТЬ (ROLL)</button>
+        
+        <div class="action-buttons" id="action-block">
+            <button class="btn btn-sell" onclick="processAction('sell')">Продать (<span id="sell-price">0</span>)</button>
+            <button class="btn btn-keep" onclick="processAction('keep')">Оставить</button>
+        </div>
+    </div>
+
+    <div class="inventory-section">
+        <div class="inventory-title">Твой Инвентарь</div>
+        <div class="inventory-list" id="inv-list">
+            </div>
+    </div>
+
+    <script>
+        // Инициализация Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Расширяем на весь экран
+
+        // Пул фраз (как на бэкенде)
+        const PHRASES_POOL = [
+            {name: "Common Word", chance: 0.5, text: "1 из 2", price: 5, color: "var(--rarity-common)"},
+            {name: "sixseven", chance: 0.15, text: "1 из 7", price: 15, color: "var(--rarity-rare)"},
+            {name: "Python Power", chance: 0.02, text: "1 из 50", price: 100, color: "var(--rarity-epic)"},
+            {name: "Script God", chance: 0.0001, text: "1 из 10 000", price: 5000, color: "var(--rarity-legendary)"}
+        ];
+
+        let currentDrop = null;
+        let balance = 0;
+
+        // Отображение имени пользователя из ТГ
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            document.getElementById('username').innerText = tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.first_name;
+        }
+
+        // Логика крутки (симуляция на фронте для плавности анимации)
+        function startRoll() {
+            const btn = document.getElementById('roll-btn');
+            const phraseDisplay = document.getElementById('phrase-display');
+            const rarityDisplay = document.getElementById('rarity-display');
+            const actionBlock = document.getElementById('action-block');
+
+            btn.disabled = true;
+            actionBlock.style.display = 'none';
+            phraseDisplay.classList.add('rolling');
+            rarityDisplay.innerText = "Вычисление...";
+
+            // Имитация эффекта крутки Sol's RNG (0.8 секунды мигания)
+            let timer = setInterval(() => {
+                let randomTemp = PHRASES_POOL[Math.floor(Math.random() * PHRASES_POOL.length)];
+                phraseDisplay.innerText = randomTemp.name;
+                phraseDisplay.style.color = randomTemp.color;
+            }, 80);
+
+            setTimeout(() => {
+                clearInterval(timer);
+                phraseDisplay.classList.remove('rolling');
+                
+                // Рассчитываем реальный дроп по шансам
+                currentDrop = calculateDrop();
+                
+                // Выводим результат
+                phraseDisplay.innerText = currentDrop.name;
+                phraseDisplay.style.color = currentDrop.color;
+                rarityDisplay.innerText = `Редкость: ${currentDrop.text}`;
+                
+                // Показываем цену продажи и кнопки действий
+                document.getElementById('sell-price').innerText = currentDrop.price;
+                actionBlock.style.display = 'flex';
+            }, 1000);
+        }
+
+        function calculateDrop() {
+            let rand = Math.random();
+            // Сортируем по редкости (от меньшего шанса к большему)
+            let sorted = [...PHRASES_POOL].sort((a,b) => a.chance - b.chance);
+            for (let item of sorted) {
+                if (rand < item.chance) return item;
+            }
+            return PHRASES_POOL[0];
+        }
+
+        // Обработка выбора: Оставить или Продать
+        function processAction(choice) {
+            document.getElementById('action-block').style.display = 'none';
+            document.getElementById('roll-btn').disabled = false;
+
+            let webAppData = {
+                action: choice,
+                item: currentDrop.name,
+                price: currentDrop.price,
+                rarity: currentDrop.text
+            };
+
+            if (choice === 'sell') {
+                balance += currentDrop.price;
+                document.getElementById('balance-val').innerText = balance;
+            } else if (choice === 'keep') {
+                updateInventoryUI(currentDrop.name, currentDrop.text, currentDrop.color);
+            }
+
+            // Отправляем данные обратно боту в Telegram!
+            // Внимание: Этот метод закроет WebApp окно, если бот работает в режиме inline-режима,
+            // либо передаст данные в событие web_app_data.
+            tg.sendData(JSON.stringify(webAppData));
+        }
+
+        function updateInventoryUI(name, rarity, color) {
+            const list = document.getElementById('inv-list');
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'inv-item';
+            itemDiv.innerHTML = `<span style="color: ${color}; font-weight:bold;">${name}</span> <span>${rarity}</span>`;
+            list.prepend(itemDiv);
+        }
+    </script>
+</body>
+</html>
