@@ -461,13 +461,22 @@
         }
 
         function validateStateFields() {
-            if(!gameState.inventory) gameState.inventory = [];
-            if(gameState.superCharge === undefined) gameState.superCharge = 0;
-            if(gameState.speedLevel === undefined) gameState.speedLevel = 0;
-            if(!gameState.buffs) gameState.buffs = { speed: 0, luck: 0 };
-            if(!gameState.activeBuffs) gameState.activeBuffs = { speedRolls: 0, luckRolls: 0 };
+            // Если баланса нет или он превратился в NaN ("не число"), сбрасываем в 0
+            if (gameState.balance === undefined || isNaN(gameState.balance)) {
+                gameState.balance = 0;
+            }
+            // Проверка и защита поля общего количества роллов
+            if (gameState.totalRolls === undefined || isNaN(gameState.totalRolls)) {
+                gameState.totalRolls = 0;
+            }
+            // Защита остальных системных полей
+            if (!gameState.inventory) gameState.inventory = [];
+            if (gameState.superCharge === undefined || isNaN(gameState.superCharge)) gameState.superCharge = 0;
+            if (gameState.luckLevel === undefined || isNaN(gameState.luckLevel)) gameState.luckLevel = 0;
+            if (gameState.speedLevel === undefined || isNaN(gameState.speedLevel)) gameState.speedLevel = 0;
+            if (!gameState.buffs) gameState.buffs = { speed: 0, luck: 0 };
+            if (!gameState.activeBuffs) gameState.activeBuffs = { speedRolls: 0, luckRolls: 0 };
         }
-
         function switchTab(tabId) {
             AudioFX.playTick();
             currentActiveTab = tabId;
