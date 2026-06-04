@@ -52,7 +52,7 @@
             background: var(--bg-card);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px border var(--border-color);
+            border: 1px solid var(--border-color);
             padding: 24px 16px;
             border-radius: 24px;
             margin-bottom: 24px;
@@ -102,7 +102,7 @@
             text-shadow: 0 0 10px rgba(0, 245, 212, 0.4);
         }
 
-        /* Навигация (3 вкладки вместо 4) */
+        /* Навигация (3 кнопки) */
         .tab-bar {
             position: fixed;
             bottom: 16px;
@@ -139,9 +139,7 @@
             opacity: 0.6;
             transition: transform 0.3s ease, opacity 0.3s ease;
         }
-        .tab-btn.active {
-            color: var(--text-main);
-        }
+        .tab-btn.active { color: var(--text-main); }
         .tab-btn.active .icon {
             opacity: 1;
             transform: scale(1.15);
@@ -155,7 +153,7 @@
         .roll-area {
             position: relative;
             margin: 0 auto;
-            min-height: 280px;
+            min-height: 310px;
             background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.02), transparent 100%), var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 32px;
@@ -169,7 +167,6 @@
             transition: border-color 0.5s ease, box-shadow 0.5s ease;
         }
         
-        /* Эффект свечения при крутке */
         .roll-area.active-roll {
             border-color: rgba(157, 78, 221, 0.4);
             box-shadow: 0 0 30px rgba(157, 78, 221, 0.15), inset 0 0 20px rgba(157, 78, 221, 0.1);
@@ -179,9 +176,12 @@
             font-size: 34px;
             font-weight: 800;
             margin: 12px 0;
-            min-height: 50px;
+            min-height: 55px;
             transition: transform 0.2s, text-shadow 0.3s;
             letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .rarity-display {
             font-size: 12px;
@@ -190,10 +190,18 @@
             text-transform: uppercase;
             letter-spacing: 2px;
             font-weight: 700;
-            margin-bottom: 28px;
+            margin-bottom: 20px;
         }
         
-        /* Кнопка нового поколения */
+        /* Управление Роллами */
+        .control-box {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 85%;
+            align-items: center;
+        }
+
         .btn-roll {
             background: linear-gradient(135deg, var(--accent-purple) 0%, #7b2cbf 100%);
             color: white;
@@ -206,11 +214,30 @@
             cursor: pointer;
             box-shadow: 0 6px 20px rgba(157, 78, 221, 0.3);
             transition: all 0.15s cubic-bezier(0, 0, 0.2, 1);
-            width: 85%;
+            width: 100%;
         }
         .btn-roll:active {
             transform: scale(0.96);
-            box-shadow: 0 2px 10px rgba(157, 78, 221, 0.2);
+        }
+
+        .btn-autoroll {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 70%;
+        }
+        .btn-autoroll.active {
+            background: rgba(0, 245, 212, 0.15);
+            color: var(--accent-cyan);
+            border-color: rgba(0, 245, 212, 0.3);
+            box-shadow: 0 0 15px rgba(0, 245, 212, 0.1);
         }
         
         .rolling { animation: matrixBlur 0.08s infinite alternate; }
@@ -236,92 +263,78 @@
             color: #ff4d4d;
             border: 1px solid rgba(239, 68, 68, 0.2);
         }
-        .btn-sell:active { background: rgba(239, 68, 68, 0.2); }
-        
         .btn-keep {
             background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
             color: white;
             box-shadow: 0 4px 15px rgba(0, 180, 216, 0.25);
         }
-        .btn-keep:active { transform: scale(0.98); }
 
-        /* Магазин Бустов */
+        /* ТЕКСТОВЫЕ КИБЕР-ЭФФЕКТЫ ДЛЯ ФРАЗ (AURAS) */
+        /* 1 из 25 - Пульсация */
+        .effect-pulse { animation: auraPulse 2s infinite alternate; }
+        @keyframes auraPulse {
+            0% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(0,180,216,0.4)); }
+            100% { transform: scale(1.04); filter: drop-shadow(0 0 12px rgba(0,180,216,0.8)); }
+        }
+
+        /* 1 из 150 - Глитч */
+        .effect-glitch { animation: auraGlitch 0.3s infinite; position: relative;}
+        @keyframes auraGlitch {
+            0% { transform: translate(0); text-shadow: 2px -1px red, -2px 1px blue; }
+            20% { transform: translate(-1px, 1px); text-shadow: -1px 2px red, 1px -2px blue; }
+            40% { transform: translate(1px, -1px); text-shadow: 1px -1px red, -1px 1px blue; }
+            60% { transform: translate(-1px, -1px); text-shadow: 2px 1px red, -2px -1px blue; }
+            80% { transform: translate(1px, 1px); text-shadow: -1px -1px red, 1px 2px blue; }
+            100% { transform: translate(0); text-shadow: 1px 2px red, -1px -2px blue; }
+        }
+
+        /* 1 из 2000 - Неоновое пламя */
+        .effect-fire { animation: auraFire 1.5s infinite alternate; }
+        @keyframes auraFire {
+            0% { text-shadow: 0 0 4px #fff, 0 -4px 8px #ff6b6b, 0 -8px 12px #ff4d4d; }
+            50% { text-shadow: 0 0 6px #fff, 0 -6px 12px #ff8585, 0 -12px 18px #ff6b6b; transform: translateY(-1px); }
+            100% { text-shadow: 0 0 4px #fff, 0 -4px 6px #ff6b6b, 0 -7px 10px #ff4d4d; }
+        }
+
+        /* 1 из 50000 - Живая Радуга */
+        .effect-rainbow { animation: auraRainbow 4s linear infinite; }
+        @keyframes auraRainbow {
+            0% { color: #ffbe0b; filter: drop-shadow(0 0 8px #ffbe0b); }
+            25% { color: #00f5d4; filter: drop-shadow(0 0 8px #00f5d4); }
+            50% { color: #9d4edd; filter: drop-shadow(0 0 8px #9d4edd); }
+            75% { color: #ff6b6b; filter: drop-shadow(0 0 8px #ff6b6b); }
+            100% { color: #ffbe0b; filter: drop-shadow(0 0 8px #ffbe0b); }
+        }
+
+        /* Остальной дизайн магазина/склада */
         .tree-container { display: flex; flex-direction: column; gap: 14px; align-items: center; }
         .upgrade-node {
-            width: 100%;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            padding: 18px;
-            text-align: left;
-            box-sizing: border-box;
+            width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px; padding: 18px; text-align: left; box-sizing: border-box;
         }
-        .upgrade-title {
-            font-weight: 700;
-            font-size: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .upgrade-desc {
-            font-size: 13px;
-            color: var(--text-muted);
-            margin: 6px 0 16px 0;
-            line-height: 1.4;
-        }
+        .upgrade-title { font-weight: 700; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .upgrade-desc { font-size: 13px; color: var(--text-muted); margin: 6px 0 16px 0; line-height: 1.4; }
         .lvl-badge {
-            background: rgba(157, 78, 221, 0.1);
-            color: #c8b6ff;
-            padding: 4px 10px;
-            border-radius: 8px;
-            font-size: 11px;
-            font-weight: 700;
-            border: 1px solid rgba(157, 78, 221, 0.15);
+            background: rgba(157, 78, 221, 0.1); color: #c8b6ff; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; border: 1px solid rgba(157, 78, 221, 0.15);
         }
         .btn-upgrade { width: 100%; padding: 12px; border-radius: 12px; font-weight: 600; font-size: 13px; border: none;}
-        .btn-upgrade.available {
-            background: var(--text-main);
-            color: var(--bg-main);
-            cursor: pointer;
-        }
-        .btn-upgrade.not-available {
-            background: rgba(255,255,255,0.04);
-            color: rgba(255,255,255,0.2);
-            cursor: not-allowed;
-        }
+        .btn-upgrade.available { background: var(--text-main); color: var(--bg-main); cursor: pointer; }
+        .btn-upgrade.not-available { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.2); cursor: not-allowed; }
 
-        /* Инвентарь */
         .inventory-list { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 10px; }
         .inv-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            padding: 14px 18px;
-            border-radius: 18px;
-            box-sizing: border-box;
+            display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); border: 1px solid var(--border-color); padding: 14px 18px; border-radius: 18px; box-sizing: border-box;
         }
         .inv-info { text-align: left; }
         .inv-name { font-weight: 700; font-size: 15px; margin-bottom: 2px; }
         .inv-rarity { font-size: 12px; color: var(--text-muted); letter-spacing: 0.5px; }
         .btn-inv-sell {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--border-color);
-            color: var(--accent-gold);
-            padding: 8px 14px;
-            border-radius: 10px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-color); color: var(--accent-gold); padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer;
         }
-        .btn-inv-sell:active { background: rgba(255,255,255,0.1); }
     </style>
 </head>
 <body>
 
-    <!-- Счётчики (Всегда на виду сверху) -->
+    <!-- Счётчики -->
     <div class="stats-container">
         <span class="balance-label">Баланс Системы</span>
         <span id="balance" class="money">0 💰</span>
@@ -336,7 +349,7 @@
         </div>
     </div>
 
-    <!-- ТАБ 1: КРУТКА (RNG) -->
+    <!-- ТАБ 1: КРУТКА -->
     <div id="tab_main" class="tab-content active">
         <h1>Phrases RNG</h1>
         <p>Сверхчистая генерация квантовых фраз</p>
@@ -345,7 +358,10 @@
             <div class="phrase-display" id="phraseDisplay">Ready</div>
             <div class="rarity-display" id="rarityDisplay">Нажмите для старта</div>
             
-            <button class="btn-roll" id="rollBtn" onclick="startRngRoll()">МАТРИЧНЫЙ РОЛЛ</button>
+            <div class="control-box" id="controlBox">
+                <button class="btn-roll" id="rollBtn" onclick="startRngRoll()">МАТРИЧНЫЙ РОЛЛ</button>
+                <button class="btn-autoroll" id="autoBtn" onclick="toggleAutoRoll()">АВТО-РОЛЛ [ВЫКЛ]</button>
+            </div>
             
             <div class="action-container" id="actionContainer">
                 <button class="btn btn-sell" id="sellBtn" onclick="handleRollChoice('sell')">Утилизировать</button>
@@ -367,7 +383,7 @@
         </div>
     </div>
 
-    <!-- ТАБ 3: ХРАНИЛИЩЕ (ИНВЕНТАРЬ) -->
+    <!-- ТАБ 3: ХРАНИЛИЩЕ -->
     <div id="tab_inventory" class="tab-content">
         <h1>База Данных Фраз</h1>
         <p>Ваши успешно сохраненные сигналы фраз</p>
@@ -376,7 +392,7 @@
         </div>
     </div>
 
-    <!-- ТАББАР (Только 3 кнопки) -->
+    <!-- ТАББАР -->
     <div class="tab-bar">
         <button class="tab-btn active" id="btn_tab_main" onclick="switchTab('main')"><span class="icon">⚡</span><span>Ролл</span></button>
         <button class="tab-btn" id="btn_tab_upgrades" onclick="switchTab('upgrades')"><span class="icon">🔮</span><span>Ядро</span></button>
@@ -391,14 +407,16 @@
 
         let currentActiveTab = 'main';
         let currentDrop = null;
+        let isAutoRollActive = false;
+        let autoRollInterval = null;
 
         const PHRASES_POOL = [
-            { name: "Common Word", chance: 1/2, text: "1 из 2", price: 5, color: "#9e9e9e" },
-            { name: "sixseven", chance: 1/7, text: "1 из 7", price: 20, color: "#00f5d4" },
-            { name: "Aboba Custom", chance: 1/25, text: "1 из 25", price: 75, color: "#00b4d8" },
-            { name: "Python Power", chance: 1/150, text: "1 из 150", price: 450, color: "#9d4edd" },
-            { name: "Grandmaster", chance: 1/2000, text: "1 из 2 000", price: 6000, color: "#ff6b6b" },
-            { name: "Script God", chance: 1/50000, text: "1 in 50 000", price: 150000, color: "#ffbe0b" }
+            { name: "Common Word", chance: 1/2, text: "1 из 2", price: 5, color: "#9e9e9e", fx: "" },
+            { name: "sixseven", chance: 1/7, text: "1 из 7", price: 20, color: "#00f5d4", fx: "" },
+            { name: "Aboba Custom", chance: 1/25, text: "1 из 25", price: 75, color: "#00b4d8", fx: "effect-pulse" },
+            { name: "Python Power", chance: 1/150, text: "1 из 150", price: 450, color: "#9d4edd", fx: "effect-glitch" },
+            { name: "Grandmaster", chance: 1/2000, text: "1 из 2 000", price: 6000, color: "#ff6b6b", fx: "effect-fire" },
+            { name: "Script God", chance: 1/50000, text: "1 in 50 000", price: 150000, color: "#ffbe0b", fx: "effect-rainbow" }
         ];
 
         let gameState = {
@@ -413,7 +431,6 @@
         function sendSaveToCloud() {
             const userId = tg.initDataUnsafe?.user?.id || 12345;
             const username = tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name || "Кибер Игрок";
-
             fetch(DATABASE_URL, {
                 method: "POST",
                 headers: { "Content-Type": "text/plain" },
@@ -453,6 +470,9 @@
             
             if (tabId === 'inventory') renderInventory();
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            
+            // Если ушли с главного таба — тушим авторолл
+            if (tabId !== 'main' && isAutoRollActive) toggleAutoRoll();
             updateUI();
         }
 
@@ -466,24 +486,27 @@
         }
 
         function startRngRoll() {
-            const rollBtn = document.getElementById('rollBtn');
+            const controlBox = document.getElementById('controlBox');
             const phraseDisplay = document.getElementById('phraseDisplay');
             const rarityDisplay = document.getElementById('rarityDisplay');
             const actionContainer = document.getElementById('actionContainer');
             const rollArea = document.getElementById('rollArea');
 
-            rollBtn.style.display = 'none';
+            controlBox.style.display = 'none';
             actionContainer.style.display = 'none';
-            phraseDisplay.classList.add('rolling');
+            
+            // Очищаем старые стили эффектов ауры перед новой прокруткой
+            phraseDisplay.className = "phrase-display rolling";
             rollArea.classList.add('active-roll');
             rarityDisplay.innerText = "СИНХРОНИЗАЦИЯ ЧАСТОТ...";
 
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
+            if (tg.HapticFeedback && !isAutoRollActive) tg.HapticFeedback.notificationOccurred('warning');
 
             let interval = setInterval(() => {
                 let temp = PHRASES_POOL[Math.floor(Math.random() * PHRASES_POOL.length)];
                 phraseDisplay.innerText = temp.name;
                 phraseDisplay.style.color = temp.color;
+                phraseDisplay.style.textShadow = 'none';
             }, 70);
 
             setTimeout(() => {
@@ -496,21 +519,77 @@
 
                 phraseDisplay.innerText = currentDrop.name;
                 phraseDisplay.style.color = currentDrop.color;
-                // Применяем неоновый фильтр свечения в цвет фраз
-                phraseDisplay.style.textShadow = `0 0 15px ${currentDrop.color}80`;
-                rarityDisplay.innerText = `Индекс: ${currentDrop.text}`;
-
-                document.getElementById('sellBtn').innerText = `Утилизировать (+${currentDrop.price})`;
-                actionContainer.style.display = 'flex';
                 
+                // Включение уникальной текстовой ауры (эффекта)
+                if(currentDrop.fx) {
+                    phraseDisplay.classList.add(currentDrop.fx);
+                } else {
+                    phraseDisplay.style.textShadow = `0 0 15px ${currentDrop.color}80`;
+                }
+                
+                rarityDisplay.innerText = `Индекс: ${currentDrop.text}`;
                 gameState.totalRolls++;
+
+                // СТРАТЕГИЯ АВТОРОЛЛА: 
+                // Автоматом сливаем Common (1 из 2) и sixseven (1 из 7), чтобы не спамить.
+                // На редких фразах авторолл тормозит, давая забрать дроп.
+                if (isAutoRollActive) {
+                    if (currentDrop.chance >= 1/7) {
+                        // Быстрая автоматическая утилизация мусора
+                        setTimeout(() => {
+                            gameState.balance += currentDrop.price;
+                            currentDrop = null;
+                            phraseDisplay.className = "phrase-display";
+                            phraseDisplay.style.textShadow = 'none';
+                            updateUI();
+                            // Цикл продолжается дальше сам
+                        }, 800);
+                    } else {
+                        // Нашли крутую вещь! Выключаем авторолл и даём выбор
+                        toggleAutoRoll();
+                        document.getElementById('sellBtn').innerText = `Утилизировать (+${currentDrop.price})`;
+                        actionContainer.style.display = 'flex';
+                        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                        sendSaveToCloud();
+                    }
+                } else {
+                    // Обычный ручной режим
+                    document.getElementById('sellBtn').innerText = `Утилизировать (+${currentDrop.price})`;
+                    actionContainer.style.display = 'flex';
+                }
                 updateUI();
-            }, 1200);
+            }, 1000);
+        }
+
+        // Включение / Выключение автокрутки
+        function toggleAutoRoll() {
+            const autoBtn = document.getElementById('autoBtn');
+            if (!isAutoRollActive) {
+                isAutoRollActive = true;
+                autoBtn.innerText = "АВТО-РОЛЛ [ВКЛ]";
+                autoBtn.classList.add('active');
+                
+                // Запуск бесконечного цикла роллов
+                startRngRoll();
+                autoRollInterval = setInterval(() => {
+                    if(!currentDrop && isAutoRollActive && document.getElementById('controlBox').style.display !== 'none') {
+                        startRngRoll();
+                    }
+                }, 2100);
+            } else {
+                isAutoRollActive = false;
+                autoBtn.innerText = "АВТО-РОЛЛ [ВЫКЛ]";
+                autoBtn.classList.remove('active');
+                clearInterval(autoRollInterval);
+            }
         }
 
         function handleRollChoice(choice) {
             document.getElementById('actionContainer').style.display = 'none';
-            document.getElementById('rollBtn').style.display = 'block';
+            document.getElementById('controlBox').style.display = 'flex';
+            
+            // Сброс классов эффектов
+            document.getElementById('phraseDisplay').className = "phrase-display";
             document.getElementById('phraseDisplay').style.textShadow = 'none';
 
             if (choice === 'sell') {
@@ -522,7 +601,8 @@
                     name: currentDrop.name,
                     text: currentDrop.text,
                     price: currentDrop.price,
-                    color: currentDrop.color
+                    color: currentDrop.color,
+                    fx: currentDrop.fx
                 });
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('success');
             }
@@ -570,9 +650,13 @@
             gameState.inventory.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'inv-item';
+                
+                // Переносим анимационный класс эффекта и в инвентарь тоже!
+                const fxClass = item.fx ? item.fx : "";
+                
                 div.innerHTML = `
                     <div class="inv-info">
-                        <div class="inv-name" style="color: ${item.color}">${item.name}</div>
+                        <div class="inv-name ${fxClass}" style="color: ${item.color}">${item.name}</div>
                         <div class="inv-rarity">${item.text}</div>
                     </div>
                     <button class="btn-inv-sell" onclick="sellFromInventory(${item.id}, ${item.price})">💰 ${item.price}</button>
