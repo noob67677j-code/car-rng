@@ -425,7 +425,6 @@
             setTimeout(() => document.body.style.transform = 'none', 50);
         }
 
-        // Жесткая валидация и исправление NaN/undefined «на лету»
         function validateStateFields() {
             if (gameState.balance === undefined || isNaN(parseFloat(gameState.balance))) gameState.balance = 0;
             else gameState.balance = parseFloat(gameState.balance);
@@ -452,8 +451,9 @@
             if (isNaN(parseInt(gameState.activeBuffs.luckRolls))) gameState.activeBuffs.luckRolls = 0;
         }
 
+        // Асинхронное сохранение: игра обновляется МОМЕНТАЛЬНО, а сеть работает на фоне
         function saveGame() {
-            validateStateFields(); // Фиксируем типы перед сохранением
+            validateStateFields();
             const userId = tg.initDataUnsafe?.user?.id || 12345;
             localStorage.setItem(`rng_save_${userId}`, JSON.stringify(gameState));
             
@@ -462,16 +462,19 @@
                 username = tg.initDataUnsafe.user.username ? "@" + tg.initDataUnsafe.user.username : tg.initDataUnsafe.user.first_name;
             }
             
+            // Отправляем запрос, но НЕ заставляем интерфейс ждать ответа сервера
             fetch(DATABASE_URL, {
                 method: "POST", 
+                mode: "cors",
                 headers: { "Content-Type": "text/plain" },
-                body: JSON.stringify({ action: "save", user_id: userId, username: username, save: gameState })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if(data && data.status === "success") console.log("Синхронизация с облаком успешна");
-            })
-            .catch(e => console.log("Ошибка фонового сохранения: ", e));
+                body: JSON.stringify({ 
+                    action: "save", 
+                    user_id: userId, 
+                    username: username, 
+                    balance: gameState.balance, // Передаем баланс отдельным числовым полем для Топа
+                    save: gameState 
+                })
+            }).catch(e => console.log("Фоновое сохранение ожидает сеть..."));
         }
 
         function initGameData() {
@@ -482,13 +485,12 @@
                 try {
                     gameState = JSON.parse(local);
                 } catch(e) {
-                    console.log("Кэш был поврежден, создаем новый");
+                    console.log("Откат к чистой структуре");
                 }
             }
             validateStateFields();
             updateUI();
 
-            // Парсим данные из Google Таблиц
             fetch(DATABASE_URL, {
                 method: "POST", 
                 headers: { "Content-Type": "text/plain" },
@@ -497,12 +499,12 @@
             .then(res => res.json())
             .then(data => {
                 if (data && data.status === "success" && data.save) {
-                    gameState = data.save;
+                    gameState = typeof data.save === 'string' ? JSON.parse(data.save) : data.save;
                     validateStateFields();
                     updateUI();
                 }
             })
-            .catch(e => console.log("Облако недоступно, работаем на локальном ядре."));
+            .catch(e => console.log("Работа в автономном режиме."));
         }
 
         function switchTab(tabId) {
@@ -532,10 +534,7 @@
                 headers: { "Content-Type": "text/plain" },
                 body: JSON.stringify({ action: "get_leaderboard" })
             })
-            .then(res => {
-                if (!res.ok) throw new Error();
-                return res.json();
-            })
+            .then(res => res.json())
             .then(data => {
                 if(data && data.status === "success") {
                     renderLeaderboard(data.leaderboard);
@@ -566,12 +565,18 @@
                 else if(index === 1) { rankClass = "top-2"; medal = "🥈"; }
                 else if(index === 2) { medal = "🥉"; }
 
-                const pBalance = isNaN(parseFloat(player.balance)) ? 0 : parseFloat(player.balance);
+                // Безопасное чтение баланса игрока из топа
+                let pBalance = 0;
+                if (player.balance !== undefined) pBalance = parseFloat(player.balance);
+                if (isNaN(pBalance) && player.save) {
+                    let s = typeof player.save === 'string' ? JSON.parse(player.save) : player.save;
+                    pBalance = parseFloat(s.balance) || 0;
+                }
 
                 item.className = `leader-item ${rankClass}`;
                 item.innerHTML = `
                     <div class="leader-rank">${medal}</div>
-                    <div class="leader-name">${player.username || "Аноним"}</div>
+                    <div class="leader-name">${player.username || "Архитектор матрицы"}</div>
                     <div class="leader-score">${Math.floor(pBalance).toLocaleString('ru-RU')} 💰</div>
                 `;
                 container.appendChild(item);
@@ -633,7 +638,9 @@
                     craftLuckBonus = 1.5;
                     gameState.activeBuffs.luckRolls--;
                 }
-                if(parseInt(gameState.activeBuffs.speedRolls) > 0) gameState.activeBuffs.speedRolls--;
+                if(parseInt(gameState.activeBuffs.speedRolls) > 0) {
+                    gameState.activeBuffs.speedRolls--;
+                }
 
                 let baseLuck = 1 + (parseInt(gameState.luckLevel) * 0.2);
                 let finalLuck = (isSuperRoll ? (baseLuck * 5.0) : baseLuck) * craftLuckBonus;
@@ -713,6 +720,8 @@
 
         function handleRollChoice(choice) {
             if (autoTimeoutId) clearTimeout(autoTimeoutId);
+            
+            // СРАЗУ прячем интерфейс выбора и возвращаем кнопку ролла
             document.getElementById('actionContainer').style.display = 'none';
             document.getElementById('controlBox').style.display = 'flex';
             document.getElementById('phraseDisplay').className = "phrase-display";
@@ -738,10 +747,14 @@
                     weight: currentDrop.weight 
                 });
             }
+            
             currentDrop = null;
             updateUI();
-            saveGame();
-            if (isAutoRollActive && currentActiveTab === 'main') startRngRoll();
+            saveGame(); // Сохранение выполнится на фоне, лагов не будет
+            
+            if (isAutoRollActive && currentActiveTab === 'main') {
+                startRngRoll();
+            }
         }
 
         function buyUpgrade(type) {
@@ -795,7 +808,7 @@
         }
 
         function updateUI() {
-            validateStateFields(); // Полная проверка типов перед рендером
+            validateStateFields();
             
             const renderBalance = isNaN(parseFloat(gameState.balance)) ? 0 : parseFloat(gameState.balance);
             const renderRolls = isNaN(parseInt(gameState.totalRolls)) ? 0 : parseInt(gameState.totalRolls);
