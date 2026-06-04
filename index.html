@@ -378,7 +378,7 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // ВСТАВЬ СВОЮ ССЫЛКУ ИЗ GOOGLE APPS SCRIPT СЮДА
+        // Ссылка на твой Google Apps Script веб-интерфейс таблицы
         const DATABASE_URL = "https://script.google.com/macros/s/AKfycbwCib7IuDrYRlnc9FgKr42cLGVPZkeFBCoQiOJaoA3IIfgQYUrWpOBFktfYEbQV_pLU/exec"; 
 
         let currentActiveTab = 'main';
@@ -408,8 +408,14 @@
         ];
 
         let gameState = {
-            balance: 0, luckLevel: 0, speedLevel: 0, totalRolls: 0, superCharge: 0, inventory: [],
-            buffs: { speed: 0, luck: 0 }, activeBuffs: { speedRolls: 0, luckRolls: 0 }
+            balance: 0,
+            luckLevel: 0,
+            speedLevel: 0,
+            totalRolls: 0,
+            superCharge: 0,
+            inventory: [],
+            buffs: { speed: 0, luck: 0 },
+            activeBuffs: { speedRolls: 0, luckRolls: 0 }
         };
 
         const upgradeConfig = { baseCost: 100, factor: 1.5 };
@@ -419,64 +425,86 @@
             setTimeout(() => document.body.style.transform = 'none', 50);
         }
 
-        function saveGame() {
-            localStorage.setItem(`rng_save_${tg.initDataUnsafe?.user?.id || 12345}`, JSON.stringify(gameState));
+        // Жесткая валидация и исправление NaN/undefined «на лету»
+        function validateStateFields() {
+            if (gameState.balance === undefined || isNaN(parseFloat(gameState.balance))) gameState.balance = 0;
+            else gameState.balance = parseFloat(gameState.balance);
+
+            if (gameState.totalRolls === undefined || isNaN(parseInt(gameState.totalRolls))) gameState.totalRolls = 0;
+            else gameState.totalRolls = parseInt(gameState.totalRolls);
+
+            if (gameState.superCharge === undefined || isNaN(parseInt(gameState.superCharge))) gameState.superCharge = 0;
+            else gameState.superCharge = parseInt(gameState.superCharge);
+
+            if (gameState.luckLevel === undefined || isNaN(parseInt(gameState.luckLevel))) gameState.luckLevel = 0;
+            else gameState.luckLevel = parseInt(gameState.luckLevel);
+
+            if (gameState.speedLevel === undefined || isNaN(parseInt(gameState.speedLevel))) gameState.speedLevel = 0;
+            else gameState.speedLevel = parseInt(gameState.speedLevel);
+
+            if (!gameState.inventory || !Array.isArray(gameState.inventory)) gameState.inventory = [];
+            if (!gameState.buffs) gameState.buffs = { speed: 0, luck: 0 };
+            if (!gameState.activeBuffs) gameState.activeBuffs = { speedRolls: 0, luckRolls: 0 };
             
+            if (isNaN(parseInt(gameState.buffs.speed))) gameState.buffs.speed = 0;
+            if (isNaN(parseInt(gameState.buffs.luck))) gameState.buffs.luck = 0;
+            if (isNaN(parseInt(gameState.activeBuffs.speedRolls))) gameState.activeBuffs.speedRolls = 0;
+            if (isNaN(parseInt(gameState.activeBuffs.luckRolls))) gameState.activeBuffs.luckRolls = 0;
+        }
+
+        function saveGame() {
+            validateStateFields(); // Фиксируем типы перед сохранением
             const userId = tg.initDataUnsafe?.user?.id || 12345;
+            localStorage.setItem(`rng_save_${userId}`, JSON.stringify(gameState));
+            
             let username = "CyberPlayer";
             if (tg.initDataUnsafe?.user) {
                 username = tg.initDataUnsafe.user.username ? "@" + tg.initDataUnsafe.user.username : tg.initDataUnsafe.user.first_name;
             }
             
             fetch(DATABASE_URL, {
-                method: "POST", headers: { "Content-Type": "text/plain" },
+                method: "POST", 
+                headers: { "Content-Type": "text/plain" },
                 body: JSON.stringify({ action: "save", user_id: userId, username: username, save: gameState })
-            }).catch(e => console.log("Ошибка сохранения в облако: ", e));
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data && data.status === "success") console.log("Синхронизация с облаком успешна");
+            })
+            .catch(e => console.log("Ошибка фонового сохранения: ", e));
         }
 
         function initGameData() {
             const userId = tg.initDataUnsafe?.user?.id || 12345;
-            
-            // Сначала берем локальный сейв, чтобы моментально отрисовать UI
             const local = localStorage.getItem(`rng_save_${userId}`);
+            
             if(local) {
-                gameState = JSON.parse(local);
-                validateStateFields();
-                updateUI();
+                try {
+                    gameState = JSON.parse(local);
+                } catch(e) {
+                    console.log("Кэш был поврежден, создаем новый");
+                }
             }
+            validateStateFields();
+            updateUI();
 
-            // Затем подтягиваем актуальные данные из облака
+            // Парсим данные из Google Таблиц
             fetch(DATABASE_URL, {
-                method: "POST", headers: { "Content-Type": "text/plain" },
+                method: "POST", 
+                headers: { "Content-Type": "text/plain" },
                 body: JSON.stringify({ action: "load", user_id: userId })
             })
             .then(res => res.json())
             .then(data => {
-                if (data.status === "success" && data.save) {
+                if (data && data.status === "success" && data.save) {
                     gameState = data.save;
                     validateStateFields();
                     updateUI();
                 }
-            }).catch(e => console.log("Сбой загрузки из облака, работаем на локальном сейве."));
+            })
+            .catch(e => console.log("Облако недоступно, работаем на локальном ядре."));
         }
 
-        function validateStateFields() {
-            // Если баланса нет или он превратился в NaN ("не число"), сбрасываем в 0
-            if (gameState.balance === undefined || isNaN(gameState.balance)) {
-                gameState.balance = 0;
-            }
-            // Проверка и защита поля общего количества роллов
-            if (gameState.totalRolls === undefined || isNaN(gameState.totalRolls)) {
-                gameState.totalRolls = 0;
-            }
-            // Защита остальных системных полей
-            if (!gameState.inventory) gameState.inventory = [];
-            if (gameState.superCharge === undefined || isNaN(gameState.superCharge)) gameState.superCharge = 0;
-            if (gameState.luckLevel === undefined || isNaN(gameState.luckLevel)) gameState.luckLevel = 0;
-            if (gameState.speedLevel === undefined || isNaN(gameState.speedLevel)) gameState.speedLevel = 0;
-            if (!gameState.buffs) gameState.buffs = { speed: 0, luck: 0 };
-            if (!gameState.activeBuffs) gameState.activeBuffs = { speedRolls: 0, luckRolls: 0 };
-        }
         function switchTab(tabId) {
             AudioFX.playTick();
             currentActiveTab = tabId;
@@ -494,18 +522,22 @@
             updateUI();
         }
 
-        /* ПОЛУЧЕНИЕ И ОТРИСОВКА ЛИДЕРБОРДА */
         function fetchLeaderboard() {
             const container = document.getElementById('leaderboardContainer');
             container.innerHTML = `<div class="loading-text">Загрузка матрицы лидеров...</div>`;
             
             fetch(DATABASE_URL, {
-                method: "POST", headers: { "Content-Type": "text/plain" },
+                method: "POST", 
+                mode: "cors",
+                headers: { "Content-Type": "text/plain" },
                 body: JSON.stringify({ action: "get_leaderboard" })
             })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error();
+                return res.json();
+            })
             .then(data => {
-                if(data.status === "success") {
+                if(data && data.status === "success") {
                     renderLeaderboard(data.leaderboard);
                 } else {
                     container.innerHTML = `<div class="loading-text" style="color:#ff5c5c;">Не удалось загрузить топ</div>`;
@@ -534,11 +566,13 @@
                 else if(index === 1) { rankClass = "top-2"; medal = "🥈"; }
                 else if(index === 2) { medal = "🥉"; }
 
+                const pBalance = isNaN(parseFloat(player.balance)) ? 0 : parseFloat(player.balance);
+
                 item.className = `leader-item ${rankClass}`;
                 item.innerHTML = `
                     <div class="leader-rank">${medal}</div>
-                    <div class="leader-name">${player.username}</div>
-                    <div class="leader-score">${Math.floor(player.balance).toLocaleString('ru-RU')} 💰</div>
+                    <div class="leader-name">${player.username || "Аноним"}</div>
+                    <div class="leader-score">${Math.floor(pBalance).toLocaleString('ru-RU')} 💰</div>
                 `;
                 container.appendChild(item);
             });
@@ -556,6 +590,7 @@
         function startRngRoll() {
             if (isRollingRightNow) return;
             isRollingRightNow = true;
+            validateStateFields();
 
             const controlBox = document.getElementById('controlBox');
             const phraseDisplay = document.getElementById('phraseDisplay');
@@ -566,6 +601,7 @@
             controlBox.style.display = 'none';
             actionContainer.style.display = 'none';
             phraseDisplay.className = "phrase-display rolling";
+            phraseDisplay.style.textShadow = 'none';
             
             const isSuperRoll = gameState.superCharge >= 100;
             rollArea.className = isSuperRoll ? "roll-area super-active-roll" : "roll-area active-roll";
@@ -574,10 +610,10 @@
             rarityDisplay.innerText = isSuperRoll ? "КВАНТОВЫЙ РАЗРЫВ МАТРИЦЫ..." : "СИНХРОНИЗАЦИЯ ЧАСТОТ...";
 
             let baseDuration = isSuperRoll ? 1300 : 800;
-            let speedModifier = Math.max(0.35, 1 - (gameState.speedLevel * 0.15)); 
+            let speedModifier = Math.max(0.35, 1 - (parseInt(gameState.speedLevel) * 0.15)); 
             let finalDuration = baseDuration * speedModifier;
             
-            if (gameState.activeBuffs.speedRolls > 0) finalDuration *= 0.6;
+            if (parseInt(gameState.activeBuffs.speedRolls) > 0) finalDuration *= 0.6;
             if (finalDuration < 150) finalDuration = 150;
 
             let interval = setInterval(() => {
@@ -593,13 +629,13 @@
                 rollArea.className = "roll-area";
 
                 let craftLuckBonus = 1.0;
-                if(gameState.activeBuffs.luckRolls > 0) {
+                if(parseInt(gameState.activeBuffs.luckRolls) > 0) {
                     craftLuckBonus = 1.5;
                     gameState.activeBuffs.luckRolls--;
                 }
-                if(gameState.activeBuffs.speedRolls > 0) gameState.activeBuffs.speedRolls--;
+                if(parseInt(gameState.activeBuffs.speedRolls) > 0) gameState.activeBuffs.speedRolls--;
 
-                let baseLuck = 1 + (gameState.luckLevel * 0.2);
+                let baseLuck = 1 + (parseInt(gameState.luckLevel) * 0.2);
                 let finalLuck = (isSuperRoll ? (baseLuck * 5.0) : baseLuck) * craftLuckBonus;
 
                 currentDrop = calculateRngDrop(finalLuck);
@@ -640,7 +676,7 @@
                         if (isAutoRollActive && currentDrop) {
                             gameState.inventory.push({
                                 id: Date.now() + Math.random(), name: currentDrop.name, text: currentDrop.text,
-                                price: currentDrop.price, color: currentDrop.color, fx: currentDrop.fx, weight: currentDrop.weight
+                                price: parseInt(currentDrop.price) || 5, color: currentDrop.color, fx: currentDrop.fx, weight: currentDrop.weight
                             });
                             currentDrop = null;
                             actionContainer.style.display = 'none';
@@ -683,10 +719,24 @@
             document.getElementById('phraseDisplay').style.textShadow = 'none';
 
             if (!currentDrop) return;
-            if (choice === 'sell') { AudioFX.playSell(); gameState.balance += currentDrop.price; } 
+            validateStateFields();
+
+            if (choice === 'sell') { 
+                AudioFX.playSell(); 
+                let addPrice = parseFloat(currentDrop.price) || 0;
+                gameState.balance += addPrice; 
+            } 
             else if (choice === 'keep') {
                 AudioFX.playTick();
-                gameState.inventory.push({ id: Date.now() + Math.random(), name: currentDrop.name, text: currentDrop.text, price: currentDrop.price, color: currentDrop.color, fx: currentDrop.fx, weight: currentDrop.weight });
+                gameState.inventory.push({ 
+                    id: Date.now() + Math.random(), 
+                    name: currentDrop.name, 
+                    text: currentDrop.text, 
+                    price: parseInt(currentDrop.price) || 5, 
+                    color: currentDrop.color, 
+                    fx: currentDrop.fx, 
+                    weight: currentDrop.weight 
+                });
             }
             currentDrop = null;
             updateUI();
@@ -695,6 +745,7 @@
         }
 
         function buyUpgrade(type) {
+            validateStateFields();
             if(type === 'luck') {
                 let cost = Math.floor(upgradeConfig.baseCost * Math.pow(upgradeConfig.factor, gameState.luckLevel));
                 if (gameState.balance >= cost) { AudioFX.playEpicWin(); gameState.balance -= cost; gameState.luckLevel++; }
@@ -705,7 +756,10 @@
             updateUI(); saveGame();
         }
 
-        function countItemsInInventory(name) { return gameState.inventory.filter(item => item.name === name).length; }
+        function countItemsInInventory(name) { 
+            if (!gameState.inventory) return 0;
+            return gameState.inventory.filter(item => item.name === name).length; 
+        }
 
         function renderCraftRecipes() {
             let countSix = countItemsInInventory("sixseven");
@@ -722,38 +776,45 @@
         }
 
         function craftModifier(type) {
+            validateStateFields();
             if (type === 'speed' && countItemsInInventory("sixseven") >= 3) {
                 let removed = 0; gameState.inventory = gameState.inventory.filter(item => { if (item.name === "sixseven" && removed < 3) { removed++; return false; } return true; });
-                gameState.buffs.speed = (gameState.buffs.speed || 0) + 1; AudioFX.playEpicWin();
+                gameState.buffs.speed = parseInt(gameState.buffs.speed) + 1; AudioFX.playEpicWin();
             } else if (type === 'luck' && countItemsInInventory("Aboba Custom") >= 2) {
                 let removed = 0; gameState.inventory = gameState.inventory.filter(item => { if (item.name === "Aboba Custom" && removed < 2) { removed++; return false; } return true; });
-                gameState.buffs.luck = (gameState.buffs.luck || 0) + 1; AudioFX.playEpicWin();
+                gameState.buffs.luck = parseInt(gameState.buffs.luck) + 1; AudioFX.playEpicWin();
             }
             renderCraftRecipes(); updateUI(); saveGame();
         }
 
         function activateBuff(type) {
-            if (type === 'speed' && gameState.buffs.speed > 0) { gameState.buffs.speed--; gameState.activeBuffs.speedRolls = (gameState.activeBuffs.speedRolls || 0) + 10; } 
-            else if (type === 'luck' && gameState.buffs.luck > 0) { gameState.buffs.luck--; gameState.activeBuffs.luckRolls = (gameState.activeBuffs.luckRolls || 0) + 10; }
+            validateStateFields();
+            if (type === 'speed' && gameState.buffs.speed > 0) { gameState.buffs.speed--; gameState.activeBuffs.speedRolls = parseInt(gameState.activeBuffs.speedRolls) + 10; } 
+            else if (type === 'luck' && gameState.buffs.luck > 0) { gameState.buffs.luck--; gameState.activeBuffs.luckRolls = parseInt(gameState.activeBuffs.luckRolls) + 10; }
             renderInventory(); updateUI(); saveGame();
         }
 
         function updateUI() {
-            document.getElementById('balance').innerText = Math.floor(gameState.balance).toLocaleString('ru-RU') + " 💰";
-            document.getElementById('totalRolls').innerText = gameState.totalRolls;
+            validateStateFields(); // Полная проверка типов перед рендером
+            
+            const renderBalance = isNaN(parseFloat(gameState.balance)) ? 0 : parseFloat(gameState.balance);
+            const renderRolls = isNaN(parseInt(gameState.totalRolls)) ? 0 : parseInt(gameState.totalRolls);
+
+            document.getElementById('balance').innerText = Math.floor(renderBalance).toLocaleString('ru-RU') + " 💰";
+            document.getElementById('totalRolls').innerText = renderRolls;
             document.getElementById('invCount').innerText = gameState.inventory.length;
             
-            let displayLuck = (1 + (gameState.luckLevel * 0.2)) * (gameState.activeBuffs.luckRolls > 0 ? 1.5 : 1);
+            let displayLuck = (1 + (parseInt(gameState.luckLevel) * 0.2)) * (parseInt(gameState.activeBuffs.luckRolls) > 0 ? 1.5 : 1);
             document.getElementById('luckDisplay').innerText = `x${displayLuck.toFixed(1)}`;
-            document.getElementById('speedStatText').innerText = `${(100 + (gameState.speedLevel * 15) + (gameState.activeBuffs.speedRolls > 0 ? 40 : 0))}%`;
+            document.getElementById('speedStatText').innerText = `${(100 + (parseInt(gameState.speedLevel) * 15) + (parseInt(gameState.activeBuffs.speedRolls) > 0 ? 40 : 0))}%`;
 
             document.getElementById('lvl_luck_1').innerText = `Lvl ${gameState.luckLevel}`;
             document.getElementById('lvl_speed_1').innerText = gameState.speedLevel >= 4 ? "MAX Lvl" : `Lvl ${gameState.speedLevel}`;
 
             let alertBox = document.getElementById('activeBuffsAlert');
             alertBox.innerHTML = ""; let haveAlerts = false;
-            if(gameState.activeBuffs.luckRolls > 0) { haveAlerts = true; alertBox.innerHTML += `<div style="background:rgba(255,190,11,0.15); border:1px solid var(--accent-gold); color:var(--accent-gold); font-size:10px; font-weight:700; padding:4px 8px; border-radius:8px;">🍀 УДАЧА x1.5 [${gameState.activeBuffs.luckRolls}]</div>`; }
-            if(gameState.activeBuffs.speedRolls > 0) { haveAlerts = true; alertBox.innerHTML += `<div style="background:rgba(0,245,212,0.15); border:1px solid var(--accent-cyan); color:var(--accent-cyan); font-size:10px; font-weight:700; padding:4px 8px; border-radius:8px;">⚡ СКОРОСТЬ +40% [${gameState.activeBuffs.speedRolls}]</div>`; }
+            if(parseInt(gameState.activeBuffs.luckRolls) > 0) { haveAlerts = true; alertBox.innerHTML += `<div style="background:rgba(255,190,11,0.15); border:1px solid var(--accent-gold); color:var(--accent-gold); font-size:10px; font-weight:700; padding:4px 8px; border-radius:8px;">🍀 УДАЧА x1.5 [${gameState.activeBuffs.luckRolls}]</div>`; }
+            if(parseInt(gameState.activeBuffs.speedRolls) > 0) { haveAlerts = true; alertBox.innerHTML += `<div style="background:rgba(0,245,212,0.15); border:1px solid var(--accent-cyan); color:var(--accent-cyan); font-size:10px; font-weight:700; padding:4px 8px; border-radius:8px;">⚡ СКОРОСТЬ +40% [${gameState.activeBuffs.speedRolls}]</div>`; }
             alertBox.style.display = haveAlerts ? 'flex' : 'none';
 
             let bar = document.getElementById('superBar');
@@ -776,7 +837,8 @@
 
             const buffsContainer = document.getElementById('buffsContainer');
             buffsContainer.innerHTML = "";
-            let bSpeed = gameState.buffs.speed || 0; let bLuck = gameState.buffs.luck || 0;
+            let bSpeed = parseInt(gameState.buffs.speed) || 0; 
+            let bLuck = parseInt(gameState.buffs.luck) || 0;
 
             if (bSpeed === 0 && bLuck === 0) buffsContainer.innerHTML = `<div style="color: #4e5564; font-size: 11px; margin-top:6px;">Модули пусты. Создайте их во вкладке 'Синтез'.</div>`;
             else {
@@ -784,7 +846,7 @@
                 if (bLuck > 0) buffsContainer.innerHTML += `<div class="buff-item"><div><span style="font-size:12px; font-weight:700; color:var(--accent-gold);">Фокусировщик Удачи (${bLuck} шт)</span></div><button class="btn-use-buff" onclick="activateBuff('luck')">Старт</button></div>`;
             }
             
-            if (gameState.inventory.length === 0) { container.innerHTML = `<div style="color: #4e5564; margin-top: 30px; font-size: 13px;">Хранилище пусто</div>`; return; }
+            if (!gameState.inventory || gameState.inventory.length === 0) { container.innerHTML = `<div style="color: #4e5564; margin-top: 30px; font-size: 13px;">Хранилище пусто</div>`; return; }
 
             let sorted = [...gameState.inventory];
             if (sortType === 'rare') sorted.sort((a, b) => b.weight - a.weight);
@@ -792,13 +854,34 @@
 
             sorted.forEach(item => {
                 const div = document.createElement('div'); div.className = 'inv-item';
-                div.innerHTML = `<div style="text-align: left;"><div class="inv-name ${item.fx||''}" style="color: ${item.color}; font-weight: 800;">${item.name}</div><div style="font-size: 11px; color: #4e5564;">${item.text}</div></div><button class="btn-inv-sell" onclick="sellFromInventory(${item.id}, ${item.price})">💰 ${item.price}</button>`;
+                let iPrice = parseInt(item.price) || 5;
+                div.innerHTML = `<div style="text-align: left;"><div class="inv-name ${item.fx||''}" style="color: ${item.color}; font-weight: 800;">${item.name}</div><div style="font-size: 11px; color: #4e5564;">${item.text}</div></div><button class="btn-inv-sell" onclick="sellFromInventory(${item.id}, ${iPrice})">💰 ${iPrice}</button>`;
                 container.appendChild(div);
             });
         }
 
-        function sellFromInventory(itemId, price) { AudioFX.playSell(); gameState.inventory = gameState.inventory.filter(i => i.id !== itemId); gameState.balance += price; renderInventory(); updateUI(); saveGame(); }
-        function sellAllInventory() { if (gameState.inventory.length === 0) return; tg.showConfirm("Вы точно хотите стереть все фразы из Базы?", (c) => { if (c) { AudioFX.playSell(); let income = 0; gameState.inventory.forEach(i => income += i.price); gameState.balance += income; gameState.inventory = []; renderInventory(); updateUI(); saveGame(); } }); }
+        function sellFromInventory(itemId, price) { 
+            AudioFX.playSell(); 
+            validateStateFields();
+            gameState.inventory = gameState.inventory.filter(i => i.id !== itemId); 
+            gameState.balance += parseFloat(price) || 0; 
+            renderInventory(); updateUI(); saveGame(); 
+        }
+        
+        function sellAllInventory() { 
+            if (!gameState.inventory || gameState.inventory.length === 0) return; 
+            validateStateFields();
+            tg.showConfirm("Вы точно хотите стереть все фразы из Базы?", (c) => { 
+                if (c) { 
+                    AudioFX.playSell(); 
+                    let income = 0; 
+                    gameState.inventory.forEach(i => income += (parseFloat(i.price) || 0)); 
+                    gameState.balance += income; 
+                    gameState.inventory = []; 
+                    renderInventory(); updateUI(); saveGame(); 
+                } 
+            }); 
+        }
 
         window.onload = function() { initGameData(); };
 </script>
