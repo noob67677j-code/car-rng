@@ -216,9 +216,7 @@
             transition: all 0.15s cubic-bezier(0, 0, 0.2, 1);
             width: 100%;
         }
-        .btn-roll:active {
-            transform: scale(0.96);
-        }
+        .btn-roll:active { transform: scale(0.96); }
 
         .btn-autoroll {
             background: rgba(255, 255, 255, 0.05);
@@ -269,15 +267,13 @@
             box-shadow: 0 4px 15px rgba(0, 180, 216, 0.25);
         }
 
-        /* ТЕКСТОВЫЕ КИБЕР-ЭФФЕКТЫ ДЛЯ ФРАЗ (AURAS) */
-        /* 1 из 25 - Пульсация */
+        /* Текстовые Эффекты */
         .effect-pulse { animation: auraPulse 2s infinite alternate; }
         @keyframes auraPulse {
             0% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(0,180,216,0.4)); }
             100% { transform: scale(1.04); filter: drop-shadow(0 0 12px rgba(0,180,216,0.8)); }
         }
 
-        /* 1 из 150 - Глитч */
         .effect-glitch { animation: auraGlitch 0.3s infinite; position: relative;}
         @keyframes auraGlitch {
             0% { transform: translate(0); text-shadow: 2px -1px red, -2px 1px blue; }
@@ -288,7 +284,6 @@
             100% { transform: translate(0); text-shadow: 1px 2px red, -1px -2px blue; }
         }
 
-        /* 1 из 2000 - Неоновое пламя */
         .effect-fire { animation: auraFire 1.5s infinite alternate; }
         @keyframes auraFire {
             0% { text-shadow: 0 0 4px #fff, 0 -4px 8px #ff6b6b, 0 -8px 12px #ff4d4d; }
@@ -296,7 +291,6 @@
             100% { text-shadow: 0 0 4px #fff, 0 -4px 6px #ff6b6b, 0 -7px 10px #ff4d4d; }
         }
 
-        /* 1 из 50000 - Живая Радуга */
         .effect-rainbow { animation: auraRainbow 4s linear infinite; }
         @keyframes auraRainbow {
             0% { color: #ffbe0b; filter: drop-shadow(0 0 8px #ffbe0b); }
@@ -306,7 +300,48 @@
             100% { color: #ffbe0b; filter: drop-shadow(0 0 8px #ffbe0b); }
         }
 
-        /* Остальной дизайн магазина/склада */
+        /* Сортировка, Опции Хранилища */
+        .inventory-controls {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 12px;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .sort-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .sort-label { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+        .sort-select {
+            background: #14161c;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            outline: none;
+        }
+        .btn-sell-all {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ff4d4d;
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            padding: 10px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s;
+            letter-spacing: 0.5px;
+        }
+        .btn-sell-all:active { background: rgba(239, 68, 68, 0.3); }
+
         .tree-container { display: flex; flex-direction: column; gap: 14px; align-items: center; }
         .upgrade-node {
             width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px; padding: 18px; text-align: left; box-sizing: border-box;
@@ -320,7 +355,7 @@
         .btn-upgrade.available { background: var(--text-main); color: var(--bg-main); cursor: pointer; }
         .btn-upgrade.not-available { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.2); cursor: not-allowed; }
 
-        .inventory-list { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 10px; }
+        .inventory-list { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 5px; }
         .inv-item {
             display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); border: 1px solid var(--border-color); padding: 14px 18px; border-radius: 18px; box-sizing: border-box;
         }
@@ -387,6 +422,19 @@
     <div id="tab_inventory" class="tab-content">
         <h1>База Данных Фраз</h1>
         <p>Ваши успешно сохраненные сигналы фраз</p>
+        
+        <!-- Опции Хранилища -->
+        <div class="inventory-controls">
+            <div class="sort-row">
+                <span class="sort-label">Сортировка базы:</span>
+                <select id="sortSelect" class="sort-select" onchange="renderInventory()">
+                    <option value="rare">Сначала редкие</option>
+                    <option value="cheap">Сначала дешевые</option>
+                </select>
+            </div>
+            <button class="btn-sell-all" onclick="sellAllInventory()">🔥 УТИЛИЗИРОВАТЬ ВСЁ ХРАНИЛИЩЕ</button>
+        </div>
+
         <div class="inventory-list" id="inventoryContainer">
             <div style="color: var(--text-muted); margin-top: 30px; font-size: 13px;">Хранилище пусто</div>
         </div>
@@ -410,13 +458,45 @@
         let isAutoRollActive = false;
         let autoRollInterval = null;
 
+        // Генератор Звуковых частот (Web Audio API)
+        const AudioFX = {
+            ctx: null,
+            init() { if(!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+            playTick() {
+                this.init(); let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain();
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(120 + Math.random() * 80, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.015, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.05);
+                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.05);
+            },
+            playDrop() {
+                this.init(); let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(587.33, this.ctx.currentTime); // Ре
+                osc.frequency.setValueAtTime(880, this.ctx.currentTime + 0.08); // Ля
+                gain.gain.setValueAtTime(0.06, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.3);
+                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.3);
+            },
+            playSell() {
+                this.init(); let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain();
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(150, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.05, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.15);
+                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.15);
+            },
+            playClick() {
+                this.init(); let osc = this.ctx.createOscillator(); let gain = this.ctx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.02, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.03);
+                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.03);
+            }
+        };
+
         const PHRASES_POOL = [
-            { name: "Common Word", chance: 1/2, text: "1 из 2", price: 5, color: "#9e9e9e", fx: "" },
-            { name: "sixseven", chance: 1/7, text: "1 из 7", price: 20, color: "#00f5d4", fx: "" },
-            { name: "Aboba Custom", chance: 1/25, text: "1 из 25", price: 75, color: "#00b4d8", fx: "effect-pulse" },
-            { name: "Python Power", chance: 1/150, text: "1 из 150", price: 450, color: "#9d4edd", fx: "effect-glitch" },
-            { name: "Grandmaster", chance: 1/2000, text: "1 из 2 000", price: 6000, color: "#ff6b6b", fx: "effect-fire" },
-            { name: "Script God", chance: 1/50000, text: "1 in 50 000", price: 150000, color: "#ffbe0b", fx: "effect-rainbow" }
+            { name: "Common Word", chance: 1/2, text: "1 из 2", price: 5, color: "#9e9e9e", fx: "", weight: 2 },
+            { name: "sixseven", chance: 1/7, text: "1 из 7", price: 20, color: "#00f5d4", fx: "", weight: 7 },
+            { name: "Aboba Custom", chance: 1/25, text: "1 из 25", price: 75, color: "#00b4d8", fx: "effect-pulse", weight: 25 },
+            { name: "Python Power", chance: 1/150, text: "1 из 150", price: 450, color: "#9d4edd", fx: "effect-glitch", weight: 150 },
+            { name: "Grandmaster", chance: 1/2000, text: "1 из 2 000", price: 6000, color: "#ff6b6b", fx: "effect-fire", weight: 2000 },
+            { name: "Script God", chance: 1/50000, text: "1 in 50 000", price: 150000, color: "#ffbe0b", fx: "effect-rainbow", weight: 50000 }
         ];
 
         let gameState = {
@@ -462,6 +542,7 @@
         }
 
         function switchTab(tabId) {
+            AudioFX.playClick();
             currentActiveTab = tabId;
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -471,7 +552,6 @@
             if (tabId === 'inventory') renderInventory();
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
             
-            // Если ушли с главного таба — тушим авторолл
             if (tabId !== 'main' && isAutoRollActive) toggleAutoRoll();
             updateUI();
         }
@@ -495,7 +575,6 @@
             controlBox.style.display = 'none';
             actionContainer.style.display = 'none';
             
-            // Очищаем старые стили эффектов ауры перед новой прокруткой
             phraseDisplay.className = "phrase-display rolling";
             rollArea.classList.add('active-roll');
             rarityDisplay.innerText = "СИНХРОНИЗАЦИЯ ЧАСТОТ...";
@@ -503,6 +582,7 @@
             if (tg.HapticFeedback && !isAutoRollActive) tg.HapticFeedback.notificationOccurred('warning');
 
             let interval = setInterval(() => {
+                AudioFX.playTick();
                 let temp = PHRASES_POOL[Math.floor(Math.random() * PHRASES_POOL.length)];
                 phraseDisplay.innerText = temp.name;
                 phraseDisplay.style.color = temp.color;
@@ -520,7 +600,6 @@
                 phraseDisplay.innerText = currentDrop.name;
                 phraseDisplay.style.color = currentDrop.color;
                 
-                // Включение уникальной текстовой ауры (эффекта)
                 if(currentDrop.fx) {
                     phraseDisplay.classList.add(currentDrop.fx);
                 } else {
@@ -529,31 +608,26 @@
                 
                 rarityDisplay.innerText = `Индекс: ${currentDrop.text}`;
                 gameState.totalRolls++;
+                AudioFX.playDrop();
 
-                // СТРАТЕГИЯ АВТОРОЛЛА: 
-                // Автоматом сливаем Common (1 из 2) и sixseven (1 из 7), чтобы не спамить.
-                // На редких фразах авторолл тормозит, давая забрать дроп.
                 if (isAutoRollActive) {
-                    if (currentDrop.chance >= 1/7) {
-                        // Быстрая автоматическая утилизация мусора
-                        setTimeout(() => {
-                            gameState.balance += currentDrop.price;
-                            currentDrop = null;
-                            phraseDisplay.className = "phrase-display";
-                            phraseDisplay.style.textShadow = 'none';
-                            updateUI();
-                            // Цикл продолжается дальше сам
-                        }, 800);
-                    } else {
-                        // Нашли крутую вещь! Выключаем авторолл и даём выбор
-                        toggleAutoRoll();
-                        document.getElementById('sellBtn').innerText = `Утилизировать (+${currentDrop.price})`;
-                        actionContainer.style.display = 'flex';
-                        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                    setTimeout(() => {
+                        gameState.inventory.push({
+                            id: Date.now() + Math.random(),
+                            name: currentDrop.name,
+                            text: currentDrop.text,
+                            price: currentDrop.price,
+                            color: currentDrop.color,
+                            fx: currentDrop.fx,
+                            weight: currentDrop.weight
+                        });
+                        currentDrop = null;
+                        phraseDisplay.className = "phrase-display";
+                        phraseDisplay.style.textShadow = 'none';
+                        updateUI();
                         sendSaveToCloud();
-                    }
+                    }, 700);
                 } else {
-                    // Обычный ручной режим
                     document.getElementById('sellBtn').innerText = `Утилизировать (+${currentDrop.price})`;
                     actionContainer.style.display = 'flex';
                 }
@@ -561,21 +635,20 @@
             }, 1000);
         }
 
-        // Включение / Выключение автокрутки
         function toggleAutoRoll() {
+            AudioFX.playClick();
             const autoBtn = document.getElementById('autoBtn');
             if (!isAutoRollActive) {
                 isAutoRollActive = true;
                 autoBtn.innerText = "АВТО-РОЛЛ [ВКЛ]";
                 autoBtn.classList.add('active');
                 
-                // Запуск бесконечного цикла роллов
                 startRngRoll();
                 autoRollInterval = setInterval(() => {
                     if(!currentDrop && isAutoRollActive && document.getElementById('controlBox').style.display !== 'none') {
                         startRngRoll();
                     }
-                }, 2100);
+                }, 1900);
             } else {
                 isAutoRollActive = false;
                 autoBtn.innerText = "АВТО-РОЛЛ [ВЫКЛ]";
@@ -588,21 +661,23 @@
             document.getElementById('actionContainer').style.display = 'none';
             document.getElementById('controlBox').style.display = 'flex';
             
-            // Сброс классов эффектов
             document.getElementById('phraseDisplay').className = "phrase-display";
             document.getElementById('phraseDisplay').style.textShadow = 'none';
 
             if (choice === 'sell') {
+                AudioFX.playSell();
                 gameState.balance += currentDrop.price;
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
             } else if (choice === 'keep') {
+                AudioFX.playClick();
                 gameState.inventory.push({
                     id: Date.now(),
                     name: currentDrop.name,
                     text: currentDrop.text,
                     price: currentDrop.price,
                     color: currentDrop.color,
-                    fx: currentDrop.fx
+                    fx: currentDrop.fx,
+                    weight: currentDrop.weight
                 });
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('success');
             }
@@ -615,6 +690,7 @@
         function buyLuckUpgrade() {
             let cost = Math.floor(upgradeConfig.baseCost * Math.pow(upgradeConfig.factor, gameState.luckLevel));
             if (gameState.balance >= cost) {
+                AudioFX.playDrop();
                 gameState.balance -= cost;
                 gameState.luckLevel++;
                 updateUI();
@@ -642,16 +718,24 @@
 
         function renderInventory() {
             const container = document.getElementById('inventoryContainer');
+            const sortType = document.getElementById('sortSelect').value;
             container.innerHTML = "";
+            
             if (gameState.inventory.length === 0) {
                 container.innerHTML = `<div style="color: var(--text-muted); margin-top: 30px; font-size: 13px;">Хранилище пусто</div>`;
                 return;
             }
-            gameState.inventory.forEach(item => {
+
+            let sortedInventory = [...gameState.inventory];
+            if (sortType === 'rare') {
+                sortedInventory.sort((a, b) => (b.weight || 0) - (a.weight || 0));
+            } else if (sortType === 'cheap') {
+                sortedInventory.sort((a, b) => a.price - b.price);
+            }
+
+            sortedInventory.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'inv-item';
-                
-                // Переносим анимационный класс эффекта и в инвентарь тоже!
                 const fxClass = item.fx ? item.fx : "";
                 
                 div.innerHTML = `
@@ -666,11 +750,34 @@
         }
 
         function sellFromInventory(itemId, price) {
+            AudioFX.playSell();
             gameState.inventory = gameState.inventory.filter(i => i.id !== itemId);
             gameState.balance += price;
             renderInventory();
             updateUI();
             sendSaveToCloud();
+        }
+
+        // Кнопка комплексной утилизации "Продать всё"
+        function sellAllInventory() {
+            if (gameState.inventory.length === 0) return;
+            
+            // Вызов нативного диалога Telegram для подтверждения безопасности
+            tg.showConfirm("Вы действительно хотите утилизировать абсолютно ВСЕ фразы из вашего Хранилища?", (confirmed) => {
+                if (confirmed) {
+                    AudioFX.playSell();
+                    let totalIncome = 0;
+                    gameState.inventory.forEach(item => totalIncome += item.price);
+                    
+                    gameState.balance += totalIncome;
+                    gameState.inventory = []; // Полная очистка
+                    
+                    renderInventory();
+                    updateUI();
+                    sendSaveToCloud();
+                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                }
+            });
         }
 
         window.onload = function() {
