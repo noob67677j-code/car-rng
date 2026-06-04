@@ -2,276 +2,430 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Phrases RNG</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root {
-            --bg-color: #181818;
-            --container-bg: #242424;
-            --text-color: #ffffff;
-            --accent-color: #0088cc;
-            --rarity-common: #aaaaaa;
-            --rarity-rare: #1eff00;
-            --rarity-epic: #0070dd;
-            --rarity-legendary: #ff8000;
-        }
-
         body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            user-select: none;
+            font-family: 'Roboto', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: #111218; color: #e3e2e6; margin: 0; padding: 16px 16px 90px 16px;
+            text-align: center; user-select: none; -webkit-user-select: none; overflow-x: hidden; transition: background-color 0.3s ease;
         }
+        body.lucky-active { background-color: #0b1a14; animation: luckyPulse 1.5s infinite alternate; }
+        @keyframes luckyPulse { 0% { box-shadow: inset 0 0 40px rgba(52, 199, 89, 0.1); } 100% { box-shadow: inset 0 0 60px rgba(52, 199, 89, 0.25); } }
+        h1 { color: #e3e2e6; margin: 0 0 4px 0; font-size: 24px; font-weight: 400; }
+        p { font-size: 14px; color: #919094; margin-top: 0; }
+        
+        /* Статистика игрока */
+        .stats-container { background: #1d1b20; padding: 20px; border-radius: 24px; margin-bottom: 20px; position: relative; z-index: 10; }
+        .balance-label { font-size: 13px; color: #cbc4cf; letter-spacing: 0.5px; text-transform: uppercase; }
+        .money { color: #ffd700; font-weight: 500; font-size: 36px; display: block; margin: 8px 0; min-height: 44px; }
+        .sub-stats { display: flex; justify-content: space-around; margin-top: 12px; font-size: 14px; color: #919094; background: #262429; padding: 8px; border-radius: 16px; }
+        .luck-info { font-size: 13px; color: #e1e2ec; background: #2b2930; padding: 10px; border-radius: 16px; margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .luck-color { color: #34c759; font-weight: bold; }
 
-        .header {
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--container-bg);
-            padding: 10px 15px;
-            border-radius: 12px;
-            box-sizing: border-box;
-            margin-bottom: 20px;
-        }
+        /* Таббар навигации */
+        .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 72px; background: #1d1b20; display: flex; justify-content: space-around; align-items: center; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.2); }
+        .tab-btn { background: none; border: none; color: #cbc4cf; font-size: 11px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 25%; transition: color 0.2s ease; }
+        .tab-btn .icon-wrapper { padding: 4px 16px; border-radius: 16px; transition: background-color 0.2s ease; }
+        .tab-btn .icon { font-size: 18px; }
+        .tab-btn.active { color: #d0bcff; font-weight: 500; }
+        .tab-btn.active .icon-wrapper { background-color: #4f378b; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
 
-        .balance {
-            font-weight: bold;
-            color: #ffd700;
-        }
+        /* Зона Ролла / RNG */
+        .roll-area { position: relative; margin: 30px auto; min-height: 240px; background: #1d1b20; border-radius: 28px; padding: 24px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .phrase-display { font-size: 32px; font-weight: bold; margin: 10px 0; min-height: 48px; transition: transform 0.2s; text-shadow: 0 0 10px rgba(255,255,255,0.1); }
+        .rarity-display { font-size: 14px; color: #919094; min-height: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
+        
+        .click-btn { width: 140px; height: 140px; border-radius: 50%; background: #adc6ff; color: #002e69; font-size: 50px; cursor: pointer; border: none; outline: none; display: flex; align-items: center; justify-content: center; transition: transform 0.08s cubic-bezier(0, 0, 0.2, 1); box-shadow: 0 8px 24px rgba(173, 198, 255, 0.2); }
+        .click-btn:active { transform: scale(0.93); }
+        
+        .rolling { animation: blurRoll 0.1s infinite alternate; }
+        @keyframes blurRoll { from { filter: blur(1px); transform: scale(0.97); } to { filter: blur(3px); transform: scale(1.03); } }
 
-        .main-card {
-            width: 100%;
-            max-width: 350px;
-            background: var(--container-bg);
-            border-radius: 20px;
-            padding: 30px 20px;
-            text-align: center;
-            box-sizing: border-box;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-            margin-bottom: 20px;
-        }
+        /* Кнопки выбора (Продать / Оставить) */
+        .action-container { display: none; gap: 12px; width: 100%; margin-top: 15px; }
+        .btn { color: #ffffff; border: none; padding: 14px 16px; border-radius: 100px; font-weight: 500; cursor: pointer; width: 100%; font-size: 14px; transition: background-color 0.2s, transform 0.1s; }
+        .btn:active { transform: scale(0.98); }
+        .btn.btn-sell { background: #ef4444; }
+        .btn.btn-keep { background: #34c759; }
+        .btn.btn-roll { background: #4f378b; width: 90%; font-size: 16px; }
 
-        .display-phrase {
-            font-size: 28px;
-            font-weight: 800;
-            margin: 20px 0 5px 0;
-            min-height: 40px;
-            transition: transform 0.3s ease;
-        }
+        /* Сетка Магазина */
+        .tree-container { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+        .upgrade-node { width: 90%; max-width: 360px; background: #211f26; border-radius: 16px; padding: 16px; text-align: left; position: relative; box-sizing: border-box; }
+        .upgrade-title { font-weight: 500; font-size: 16px; display: flex; justify-content: space-between; align-items: center;}
+        .upgrade-desc { font-size: 13px; color: #919094; margin: 6px 0 14px 0; }
+        .lvl-badge { background: #332d41; color: #d0bcff; padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 500; }
+        .btn.available { background: #34c759; }
+        .btn.not-available { background: #313033; color: #919094; }
 
-        .display-rarity {
-            font-size: 14px;
-            color: #888;
-            margin-bottom: 20px;
-            min-height: 20px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+        /* Инвентарь */
+        .inventory-list { display: flex; flex-direction: column; gap: 8px; width: 95%; max-width: 360px; margin: 15px auto; padding: 0; }
+        .inv-item { display: flex; align-items: center; justify-content: space-between; background: #211f26; padding: 12px 16px; border-radius: 16px; box-sizing: border-box; }
+        .inv-info { text-align: left; }
+        .inv-name { font-weight: bold; font-size: 15px; }
+        .inv-rarity { font-size: 12px; color: #919094; }
+        .btn-inv-sell { background: #ef4444; border: none; color: white; padding: 6px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; }
 
-        .btn {
-            background: var(--accent-color);
-            color: #fff;
-            border: none;
-            padding: 12px 24px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 10px;
-            cursor: pointer;
-            width: 100%;
-            transition: background 0.2s, transform 0.1s;
-        }
-
-        .btn:active {
-            transform: scale(0.98);
-        }
-
-        .action-buttons {
-            display: none;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .btn-sell { background: #d9534f; }
-        .btn-keep { background: #5cb85c; }
-
-        /* Простенькая анимация крутки */
-        .rolling {
-            animation: blurRoll 0.1s infinite alternate;
-        }
-
-        @keyframes blurRoll {
-            from { filter: blur(1px); transform: scale(0.98); }
-            to { filter: blur(4px); transform: scale(1.02); }
-        }
-
-        /* Раздел инвентаря */
-        .inventory-section {
-            width: 100%;
-            max-width: 350px;
-            background: var(--container-bg);
-            border-radius: 15px;
-            padding: 15px;
-            box-sizing: border-box;
-        }
-
-        .inventory-title {
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            border-bottom: 1px solid #333;
-            padding-bottom: 5px;
-        }
-
-        .inventory-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            max-height: 150px;
-            overflow-y: auto;
-        }
-
-        .inv-item {
-            display: flex;
-            justify-content: space-between;
-            background: rgba(255,255,255,0.05);
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 14px;
-        }
+        /* Топ лидеров */
+        .leaderboard-list { display: flex; flex-direction: column; gap: 8px; width: 95%; max-width: 360px; margin: 15px auto; }
+        .leader-item { display: flex; align-items: center; justify-content: space-between; background: #211f26; padding: 12px 16px; border-radius: 16px; }
+        .leader-rank { font-weight: bold; width: 35px; text-align: left; color: #adc6ff; }
+        .leader-name { flex-grow: 1; text-align: left; font-weight: 500; }
+        .leader-score { font-weight: 500; color: #ffd700; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div id="username">Игрок</div>
-        <div class="balance">💰 <span id="balance-val">0</span></div>
-    </div>
-
-    <div class="main-card">
-        <div class="display-phrase" id="phrase-display">Phrases RNG</div>
-        <div class="display-rarity" id="rarity-display">Нажми крутить!</div>
-        
-        <button class="btn" id="roll-btn" onclick="startRoll()">КРУТИТЬ (ROLL)</button>
-        
-        <div class="action-buttons" id="action-block">
-            <button class="btn btn-sell" onclick="processAction('sell')">Продать (<span id="sell-price">0</span>)</button>
-            <button class="btn btn-keep" onclick="processAction('keep')">Оставить</button>
+    <div class="stats-container">
+        <span class="balance-label">Монеты RNG</span>
+        <span id="balance" class="money">0 💰</span>
+        <div class="sub-stats">
+            <div>В инвентаре: <span id="invCount" style="color: #adc6ff; font-weight: 500;">0</span></div>
+            <div>Всего роллов: <span id="totalRolls" style="color: #d0bcff; font-weight: 500;">0</span></div>
+        </div>
+        <div class="luck-info">
+            <span>🍀 Множитель удачи: <span id="luckDisplay" class="luck-color">x1.0</span></span>
         </div>
     </div>
 
-    <div class="inventory-section">
-        <div class="inventory-title">Твой Инвентарь</div>
-        <div class="inventory-list" id="inv-list">
+    <div id="tab_main" class="tab-content active">
+        <h1>Генератор Фраз</h1>
+        <p>Испытай свою удачу и поймай секретную фразу</p>
+        
+        <div class="roll-area">
+            <div class="phrase-display" id="phraseDisplay">Phrases RNG</div>
+            <div class="rarity-display" id="rarityDisplay">Нажми, чтобы закрутить</div>
+            
+            <button class="btn btn-roll" id="rollBtn" onclick="startRngRoll()">🎰 КРУТИТЬ (ROLL)</button>
+            
+            <div class="action-container" id="actionContainer">
+                <button class="btn btn-sell" id="sellBtn" onclick="handleRollChoice('sell')">Продать (+0 💰)</button>
+                <button class="btn btn-keep" onclick="handleRollChoice('keep')">В инвентарь</button>
             </div>
+        </div>
     </div>
 
-    <script>
-        // Инициализация Telegram WebApp
-        const tg = window.Telegram.WebApp;
-        tg.expand(); // Расширяем на весь экран
+    <div id="tab_upgrades" class="tab-content">
+        <h1>Магазин Бустов</h1>
+        <p>Улучшай свои девайсы, чтобы повысить шансы на легендарные фразы</p>
+        <div class="tree-container">
+            <div class="upgrade-node" id="node_luck_1">
+                <div class="upgrade-title"><span>🍀 Счастливый клевер</span><span class="lvl-badge" id="lvl_luck_1">Lvl 0</span></div>
+                <div class="upgrade-desc">Добавляет +0.2x к удаче за каждый уровень.</div>
+                <button class="btn" id="btn_luck_1" onclick="buyLuckUpgrade()">Купить</button>
+            </div>
+        </div>
+    </div>
 
-        // Пул фраз (как на бэкенде)
+    <div id="tab_inventory" class="tab-content">
+        <h1>Твой инвентарь</h1>
+        <p>Здесь хранятся твои фразы. Ты можешь продать их в любой момент.</p>
+        <div class="inventory-list" id="inventoryContainer">
+            <div style="color: #919094; margin-top: 20px;">Инвентарь пуст</div>
+        </div>
+    </div>
+
+    <div id="tab_leaderboard" class="tab-content">
+        <h1>Рейтинг Магнатов</h1>
+        <p>Самые богатые крутильщики фраз</p>
+        <div class="leaderboard-list" id="leaderboardContainer">
+            <div style="color: #919094; margin-top: 20px;">Загрузка топа...</div>
+        </div>
+    </div>
+
+    <div class="tab-bar">
+        <button class="tab-btn active" id="btn_tab_main" onclick="switchTab('main')"><div class="icon-wrapper"><span class="icon">🎰</span></div><span>РНГ</span></button>
+        <button class="tab-btn" id="btn_tab_upgrades" onclick="switchTab('upgrades')"><div class="icon-wrapper"><span class="icon">🍀</span></div><span>Бусты</span></button>
+        <button class="tab-btn" id="btn_tab_inventory" onclick="switchTab('inventory')"><div class="icon-wrapper"><span class="icon">📦</span></div><span>Склад</span></button>
+        <button class="tab-btn" id="btn_tab_leaderboard" onclick="switchTab('leaderboard')"><div class="icon-wrapper"><span class="icon">🏆</span></div><span>Топ</span></button>
+    </div>
+
+<script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // Сюда вставляешь свою развернутую ссылку веб-приложения Google Apps Script
+        const DATABASE_URL = "https://script.google.com/macros/s/AKfycbwgLV--Q71Z1m5WgWs0TKgN51ev4IyTbriO7X_NWh16D51BnwddUB6WqTJ_XFH4xZHU/exec"; 
+
+        let currentActiveTab = 'main';
+        let leaderData = [];
+        let currentDrop = null;
+
+        // Пул фраз с шансами выпадения (Sol's RNG стиль)
         const PHRASES_POOL = [
-            {name: "Common Word", chance: 0.5, text: "1 из 2", price: 5, color: "var(--rarity-common)"},
-            {name: "sixseven", chance: 0.15, text: "1 из 7", price: 15, color: "var(--rarity-rare)"},
-            {name: "Python Power", chance: 0.02, text: "1 из 50", price: 100, color: "var(--rarity-epic)"},
-            {name: "Script God", chance: 0.0001, text: "1 из 10 000", price: 5000, color: "var(--rarity-legendary)"}
+            { name: "Common Word", chance: 1/2, text: "1 из 2", price: 5, color: "#aaaaaa" },
+            { name: "sixseven", chance: 1/7, text: "1 из 7", price: 20, color: "#1eff00" },
+            { name: "Aboba Custom", chance: 1/25, text: "1 из 25", price: 75, color: "#0070dd" },
+            { name: "Python Power", chance: 1/150, text: "1 из 150", price: 450, color: "#a335ee" },
+            { name: "Grandmaster", chance: 1/2000, text: "1 из 2 000", price: 6000, color: "#ff8000" },
+            { name: "Script God", chance: 1/50000, text: "1 in 50 000", price: 150000, color: "#e6cc80" }
         ];
 
-        let currentDrop = null;
-        let balance = 0;
+        // Структура сохранения под новые механики фраз
+        let gameState = {
+            balance: 0,
+            luckLevel: 0,
+            totalRolls: 0,
+            inventory: [] // Массив объектов: {id: timestamp, name: "", text: "", price: 0, color: ""}
+        };
 
-        // Отображение имени пользователя из ТГ
-        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-            document.getElementById('username').innerText = tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.first_name;
+        const upgradeConfig = { baseCost: 100, factor: 1.5 };
+
+        // Сохранение данных в Google Sheets через POST
+        function sendSaveToCloud() {
+            const userId = tg.initDataUnsafe?.user?.id || 12345;
+            const username = tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name || "Глеб Игрок";
+
+            const packageData = {
+                action: "save",
+                user_id: userId,
+                username: username,
+                save: gameState
+            };
+
+            fetch(DATABASE_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain" },
+                body: JSON.stringify(packageData)
+            })
+            .catch(err => console.log("Ошибка облачного сохранения:", err));
         }
 
-        // Логика крутки (симуляция на фронте для плавности анимации)
-        function startRoll() {
-            const btn = document.getElementById('roll-btn');
-            const phraseDisplay = document.getElementById('phrase-display');
-            const rarityDisplay = document.getElementById('rarity-display');
-            const actionBlock = document.getElementById('action-block');
-
-            btn.disabled = true;
-            actionBlock.style.display = 'none';
-            phraseDisplay.classList.add('rolling');
-            rarityDisplay.innerText = "Вычисление...";
-
-            // Имитация эффекта крутки Sol's RNG (0.8 секунды мигания)
-            let timer = setInterval(() => {
-                let randomTemp = PHRASES_POOL[Math.floor(Math.random() * PHRASES_POOL.length)];
-                phraseDisplay.innerText = randomTemp.name;
-                phraseDisplay.style.color = randomTemp.color;
-            }, 80);
-
-            setTimeout(() => {
-                clearInterval(timer);
-                phraseDisplay.classList.remove('rolling');
-                
-                // Рассчитываем реальный дроп по шансам
-                currentDrop = calculateDrop();
-                
-                // Выводим результат
-                phraseDisplay.innerText = currentDrop.name;
-                phraseDisplay.style.color = currentDrop.color;
-                rarityDisplay.innerText = `Редкость: ${currentDrop.text}`;
-                
-                // Показываем цену продажи и кнопки действий
-                document.getElementById('sell-price').innerText = currentDrop.price;
-                actionBlock.style.display = 'flex';
-            }, 1000);
+        // Загрузка топа лидеров
+        function loadLiveTopData() {
+            const userId = tg.initDataUnsafe?.user?.id || 12345;
+            fetch(DATABASE_URL.trim(), {
+                method: "POST",
+                headers: { "Content-Type": "text/plain" },
+                body: JSON.stringify({ action: "load", user_id: userId })
+            })
+            .then(res => res.text())
+            .then(text => {
+                const data = JSON.parse(text);
+                if (data.status === "success" && data.top) {
+                    leaderData = data.top;
+                    if(currentActiveTab === 'leaderboard') renderLeaderboard();
+                }
+            })
+            .catch(e => console.log("Ошибка топа:", e));
         }
 
-        function calculateDrop() {
+        // Инициализация при входе
+        function initGameData() {
+            const userId = tg.initDataUnsafe?.user?.id || 12345;
+            
+            fetch(DATABASE_URL.trim(), {
+                method: "POST",
+                headers: { "Content-Type": "text/plain" },
+                body: JSON.stringify({ action: "load", user_id: userId })
+            })
+            .then(res => res.text())
+            .then(text => {
+                const data = JSON.parse(text);
+                if (data.status === "success" && data.save) {
+                    gameState = data.save;
+                    // Исправление на случай старой структуры бэкапа
+                    if(!gameState.inventory) gameState.inventory = [];
+                }
+                updateUI();
+            })
+            .catch(err => {
+                console.log("Оффлайн режим, берем локальный сейв");
+                const local = localStorage.getItem(`rng_save_${userId}`);
+                if(local) gameState = JSON.parse(local);
+                updateUI();
+            });
+        }
+
+        function switchTab(tabId) {
+            currentActiveTab = tabId;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab_' + tabId).classList.add('active');
+            document.getElementById('btn_tab_' + tabId).classList.add('active');
+            
+            if (tabId === 'inventory') renderInventory();
+            if (tabId === 'leaderboard') { renderLeaderboard(); loadLiveTopData(); }
+            
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            updateUI();
+        }
+
+        // Алгоритм Sol's RNG на фронте с учетом удачи (Luck)
+        function calculateRngDrop(luckMultiplier) {
             let rand = Math.random();
-            // Сортируем по редкости (от меньшего шанса к большему)
-            let sorted = [...PHRASES_POOL].sort((a,b) => a.chance - b.chance);
-            for (let item of sorted) {
-                if (rand < item.chance) return item;
+            // Сортируем от самых редких к частым
+            let sortedPool = [...PHRASES_POOL].sort((a,b) => a.chance - b.chance);
+            
+            for (let item of sortedPool) {
+                // Повышаем шанс делением на множитель или умножением вероятности
+                let modifiedChance = item.chance * luckMultiplier;
+                if (rand < modifiedChance) {
+                    return item;
+                }
             }
             return PHRASES_POOL[0];
         }
 
-        // Обработка выбора: Оставить или Продать
-        function processAction(choice) {
-            document.getElementById('action-block').style.display = 'none';
-            document.getElementById('roll-btn').disabled = false;
+        function startRngRoll() {
+            const rollBtn = document.getElementById('rollBtn');
+            const phraseDisplay = document.getElementById('phraseDisplay');
+            const rarityDisplay = document.getElementById('rarityDisplay');
+            const actionContainer = document.getElementById('actionContainer');
 
-            let webAppData = {
-                action: choice,
-                item: currentDrop.name,
-                price: currentDrop.price,
-                rarity: currentDrop.text
-            };
+            rollBtn.style.display = 'none';
+            actionContainer.style.display = 'none';
+            phraseDisplay.classList.add('rolling');
+            rarityDisplay.innerText = "ГЕНЕРАЦИЯ ВЕРОЯТНОСТЕЙ...";
+
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
+
+            // Анимация быстрой прокрутки фраз
+            let duration = 0;
+            let interval = setInterval(() => {
+                let temp = PHRASES_POOL[Math.floor(Math.random() * PHRASES_POOL.length)];
+                phraseDisplay.innerText = temp.name;
+                phraseDisplay.style.color = temp.color;
+            }, 70);
+
+            setTimeout(() => {
+                clearInterval(interval);
+                phraseDisplay.classList.remove('rolling');
+
+                // Расчет удачи: 1 + уровень * 0.2
+                let totalLuck = 1 + (gameState.luckLevel * 0.2);
+                currentDrop = calculateRngDrop(totalLuck);
+
+                // Отрисовка выпавшей фразы
+                phraseDisplay.innerText = currentDrop.name;
+                phraseDisplay.style.color = currentDrop.color;
+                rarityDisplay.innerText = `Редкость: ${currentDrop.text}`;
+
+                // Настройка кнопок выбора
+                document.getElementById('sellBtn').innerText = `Продать (+${currentDrop.price} 💰)`;
+                actionContainer.style.display = 'flex';
+                
+                gameState.totalRolls++;
+                updateUI();
+            }, 1200);
+        }
+
+        function handleRollChoice(choice) {
+            document.getElementById('actionContainer').style.display = 'none';
+            document.getElementById('rollBtn').style.display = 'block';
 
             if (choice === 'sell') {
-                balance += currentDrop.price;
-                document.getElementById('balance-val').innerText = balance;
+                gameState.balance += currentDrop.price;
+                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
             } else if (choice === 'keep') {
-                updateInventoryUI(currentDrop.name, currentDrop.text, currentDrop.color);
+                // Добавляем уникальный id по таймстампу
+                gameState.inventory.push({
+                    id: Date.now(),
+                    name: currentDrop.name,
+                    text: currentDrop.text,
+                    price: currentDrop.price,
+                    color: currentDrop.color
+                });
+                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('success');
             }
 
-            // Отправляем данные обратно боту в Telegram!
-            // Внимание: Этот метод закроет WebApp окно, если бот работает в режиме inline-режима,
-            // либо передаст данные в событие web_app_data.
-            tg.sendData(JSON.stringify(webAppData));
+            currentDrop = null;
+            updateUI();
+            sendSaveToCloud();
+            // Локальный бэкап
+            const userId = tg.initDataUnsafe?.user?.id || 12345;
+            localStorage.setItem(`rng_save_${userId}`, JSON.stringify(gameState));
         }
 
-        function updateInventoryUI(name, rarity, color) {
-            const list = document.getElementById('inv-list');
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'inv-item';
-            itemDiv.innerHTML = `<span style="color: ${color}; font-weight:bold;">${name}</span> <span>${rarity}</span>`;
-            list.prepend(itemDiv);
+        // Покупка апгрейда удачи
+        function buyLuckUpgrade() {
+            let cost = Math.floor(upgradeConfig.baseCost * Math.pow(upgradeConfig.factor, gameState.luckLevel));
+            if (gameState.balance >= cost) {
+                gameState.balance -= cost;
+                gameState.luckLevel++;
+                updateUI();
+                sendSaveToCloud();
+            }
         }
-    </script>
+
+        function updateUI() {
+            document.getElementById('balance').innerText = Math.floor(gameState.balance).toLocaleString('ru-RU') + " 💰";
+            document.getElementById('totalRolls').innerText = gameState.totalRolls;
+            document.getElementById('invCount').innerText = gameState.inventory.length;
+            
+            let currentLuck = (1 + (gameState.luckLevel * 0.2)).toFixed(1);
+            document.getElementById('luckDisplay').innerText = `x${currentLuck}`;
+            document.getElementById('lvl_luck_1').innerText = `Lvl ${gameState.luckLevel}`;
+
+            // Рассчитываем динамическую цену апгрейда
+            let cost = Math.floor(upgradeConfig.baseCost * Math.pow(upgradeConfig.factor, gameState.luckLevel));
+            const btn = document.getElementById('btn_luck_1');
+            if (gameState.balance >= cost) {
+                btn.className = "btn available";
+                btn.innerText = `Улучшить • ${cost.toLocaleString('ru-RU')} 💰`;
+            } else {
+                btn.className = "btn not-available";
+                btn.innerText = `Нужно • ${cost.toLocaleString('ru-RU')} 💰`;
+            }
+        }
+
+        function renderInventory() {
+            const container = document.getElementById('inventoryContainer');
+            container.innerHTML = "";
+            if (gameState.inventory.length === 0) {
+                container.innerHTML = `<div style="color: #919094; margin-top: 20px;">Инвентарь пуст</div>`;
+                return;
+            }
+
+            gameState.inventory.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'inv-item';
+                div.innerHTML = `
+                    <div class="inv-info">
+                        <div class="inv-name" style="color: ${item.color}">${item.name}</div>
+                        <div class="inv-rarity">${item.text}</div>
+                    </div>
+                    <button class="btn-inv-sell" onclick="sellFromInventory(${item.id}, ${item.price})">💰 ${item.price}</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function sellFromInventory(itemId, price) {
+            gameState.inventory = gameState.inventory.filter(i => i.id !== itemId);
+            gameState.balance += price;
+            renderInventory();
+            updateUI();
+            sendSaveToCloud();
+        }
+
+        function renderLeaderboard() {
+            const container = document.getElementById('leaderboardContainer');
+            container.innerHTML = "";
+            if (!leaderData || leaderData.length === 0) {
+                container.innerHTML = `<div style="color: #919094; margin-top: 20px;">Загрузка таблицы лидеров...</div>`;
+                return;
+            }
+            leaderData.forEach((player, index) => {
+                const item = document.createElement('div');
+                item.className = 'leader-item';
+                item.innerHTML = `
+                    <div class="leader-rank">#${index + 1}</div>
+                    <div class="leader-name">${player.name}</div>
+                    <div class="leader-score">${Math.floor(player.balance).toLocaleString('ru-RU')} 💰</div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // Автоматический запуск при загрузке страницы
+        window.onload = function() {
+            initGameData();
+        };
+</script>
 </body>
 </html>
