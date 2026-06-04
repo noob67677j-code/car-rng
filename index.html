@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Phrases RNG • Hyper Drive Fixed</title>
+    <title>Phrases RNG • Craft & Speed Update</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -132,6 +132,7 @@
         }
         .super-label.ready { color: var(--accent-gold); }
 
+        /* Вкладки навигации */
         .tab-bar {
             position: fixed;
             bottom: 16px; left: 16px; right: 16px;
@@ -149,7 +150,7 @@
         .tab-btn {
             background: none; border: none; color: #525866;
             font-size: 11px; font-weight: 600; cursor: pointer;
-            display: flex; flex-direction: column; align-items: center; gap: 4px; width: 30%;
+            display: flex; flex-direction: column; align-items: center; gap: 4px; width: 23%;
         }
         .tab-btn .icon { font-size: 20px; opacity: 0.5; transition: transform 0.2s; }
         .tab-btn.active { color: var(--text-main); }
@@ -161,6 +162,7 @@
         .tab-content.active { display: block; animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* Основная зона ролла */
         .roll-area {
             position: relative;
             min-height: 320px;
@@ -273,6 +275,7 @@
             66% { color: #ff007f; filter: drop-shadow(0 0 12px #ff007f); }
         }
 
+        /* Инвентарь и бусты */
         .inventory-controls {
             background: rgba(255, 255, 255, 0.02); padding: 12px; border-radius: 16px;
             border: 1px solid var(--border-color); margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px;
@@ -285,6 +288,20 @@
         .inv-item { display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); border: 1px solid var(--border-color); padding: 14px 18px; border-radius: 18px; }
         .btn-inv-sell { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); color: var(--accent-gold); padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 700; }
 
+        /* Под-секция Модификаторов */
+        .buffs-section {
+            background: rgba(157, 78, 221, 0.05); border: 1px dashed rgba(157, 78, 221, 0.2);
+            padding: 14px; border-radius: 20px; margin-bottom: 20px; text-align: left;
+        }
+        .buff-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(0,0,0,0.3); padding: 10px 14px; border-radius: 12px; margin-top: 8px;
+            border: 1px solid rgba(255,255,255,0.03);
+        }
+        .btn-use-buff { background: var(--accent-purple); color: #fff; border: none; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; }
+        .btn-use-buff.active-now { background: var(--accent-cyan); color: #000; }
+
+        /* Прокачка и Крафт */
         .tree-container { display: flex; flex-direction: column; gap: 14px; }
         .upgrade-node { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px; padding: 18px; text-align: left; }
         .upgrade-title { font-weight: 700; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
@@ -292,6 +309,10 @@
         .btn-upgrade { width: 100%; padding: 14px; border-radius: 14px; font-weight: 700; font-size: 13px; border: none; margin-top: 12px;}
         .btn-upgrade.available { background: var(--text-main); color: #000; cursor: pointer; }
         .btn-upgrade.not-available { background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.15); }
+        
+        .craft-recipe { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px; padding: 18px; text-align: left; margin-bottom: 12px;}
+        .recipe-req { font-size: 12px; color: #8a92a6; margin: 6px 0 12px 0; }
+        .recipe-req span { font-weight: 700; }
     </style>
 </head>
 <body>
@@ -319,7 +340,8 @@
         </div>
 
         <div class="sub-stats">
-            <div>Всего квантовых роллов: <span id="totalRolls">0</span></div>
+            <div>Скорость: <span id="speedStatText" style="color:#00f5d4; font-weight:700;">100%</span></div>
+            <div>Всего роллов: <span id="totalRolls">0</span></div>
         </div>
     </div>
 
@@ -328,6 +350,9 @@
         <h1>Phrases RNG</h1>
         <p>Сверхчистая генерация квантовых фраз</p>
         
+        <!-- Плашки активных временных баффов -->
+        <div id="activeBuffsAlert" style="margin-bottom:12px; display:none; gap:6px; justify-content:center; flex-wrap:wrap;"></div>
+
         <div class="roll-area" id="rollArea">
             <div class="phrase-display" id="phraseDisplay">Ready</div>
             <div class="rarity-display" id="rarityDisplay">Нажмите для калибровки</div>
@@ -352,15 +377,47 @@
             <div class="upgrade-node">
                 <div class="upgrade-title"><span>🔮 Модуль Квантов</span><span class="lvl-badge" id="lvl_luck_1">Lvl 0</span></div>
                 <div style="font-size: 13px; color: #6c757d; margin-top: 4px;">Смещает матрицу, давая стабильные +0.2x к удаче.</div>
-                <button class="btn-upgrade" id="btn_luck_1" onclick="buyLuckUpgrade()">Модернизировать</button>
+                <button class="btn-upgrade" id="btn_luck_1" onclick="buyUpgrade('luck')">Модернизировать</button>
+            </div>
+            
+            <div class="upgrade-node">
+                <div class="upgrade-title"><span>⚡ Разгон Ядра</span><span class="lvl-badge" id="lvl_speed_1">Lvl 0</span></div>
+                <div style="font-size: 13px; color: #6c757d; margin-top: 4px;">Увеличивает частоту процессора, ускоряя анимацию ролла на 15%.</div>
+                <button class="btn-upgrade" id="btn_speed_1" onclick="buyUpgrade('speed')">Разогнать</button>
             </div>
         </div>
     </div>
 
-    <!-- ТАБ 3: ХРАНИЛИЩЕ -->
+    <!-- ТАБ 3: СИНТЕЗ (КРАФТ) -->
+    <div id="tab_craft" class="tab-content">
+        <h1>Квантовый Синтез</h1>
+        <p>Переплавка обычных фраз в мощные модификаторы</p>
+        
+        <div class="craft-recipe">
+            <div style="font-weight:700; color:var(--accent-purple); font-size:16px;">⚡ Матричный Ускоритель (Буст Скорости)</div>
+            <div style="font-size:12px; color:#cfd2da; margin-top:4px;">Сокращает время генерации сигналов ещё на 40% на 10 роллов.</div>
+            <div class="recipe-req">Требуется: <span id="req_sixseven">sixseven (0/3)</span></div>
+            <button class="btn-upgrade available" id="btn_craft_speed" onclick="craftModifier('speed')">Синтезировать Модуль</button>
+        </div>
+
+        <div class="craft-recipe">
+            <div style="font-weight:700; color:var(--accent-gold); font-size:16px;">🍀 Фокусировщик Удачи (Буст Удачи x1.5)</div>
+            <div style="font-size:12px; color:#cfd2da; margin-top:4px;">Идеально настраивает линзы вероятностей на 10 роллов.</div>
+            <div class="recipe-req">Требуется: <span id="req_aboba">Aboba Custom (0/2)</span></div>
+            <button class="btn-upgrade available" id="btn_craft_luck" onclick="craftModifier('luck')">Синтезировать Модуль</button>
+        </div>
+    </div>
+
+    <!-- ТАБ 4: ХРАНИЛИЩЕ -->
     <div id="tab_inventory" class="tab-content">
         <h1>База Данных Фраз</h1>
         <p>Ваши успешно сохраненные сигналы фраз</p>
+
+        <!-- ОТДЕЛЬНАЯ ВКЛАДКА/СЕКЦИЯ ДЛЯ КРАФТ-БУСТОВ -->
+        <div class="buffs-section">
+            <div style="font-size: 13px; font-weight:800; color:var(--accent-purple); text-transform:uppercase; letter-spacing:0.5px;">📦 Синтезированные Модификаторы</div>
+            <div id="buffsContainer"></div>
+        </div>
         
         <div class="inventory-controls">
             <div class="sort-row">
@@ -380,6 +437,7 @@
     <div class="tab-bar">
         <button class="tab-btn active" id="btn_tab_main" onclick="switchTab('main')"><span class="icon">⚡</span><span>Ролл</span></button>
         <button class="tab-btn" id="btn_tab_upgrades" onclick="switchTab('upgrades')"><span class="icon">🔮</span><span>Ядро</span></button>
+        <button class="tab-btn" id="btn_tab_craft" onclick="switchTab('craft')"><span class="icon">🛠️</span><span>Синтез</span></button>
         <button class="tab-btn" id="btn_tab_inventory" onclick="switchTab('inventory')"><span class="icon">📦</span><span>База</span></button>
     </div>
 
@@ -452,9 +510,18 @@
         let gameState = {
             balance: 0,
             luckLevel: 0,
+            speedLevel: 0, 
             totalRolls: 0,
             superCharge: 0, 
-            inventory: []
+            inventory: [],
+            buffs: { 
+                speed: 0, 
+                luck: 0  
+            },
+            activeBuffs: {
+                speedRolls: 0,
+                luckRolls: 0
+            }
         };
 
         const upgradeConfig = { baseCost: 100, factor: 1.5 };
@@ -465,6 +532,11 @@
                 document.body.style.transform = `translate(${(Math.random()-0.5)*6}px, ${(Math.random()-0.5)*6}px)`;
                 setTimeout(() => document.body.style.transform = 'none', 40);
             }, 40);
+        }
+
+        function saveGame() {
+            sendSaveToCloud();
+            localStorage.setItem(`rng_save_${tg.initDataUnsafe?.user?.id || 12345}`, JSON.stringify(gameState));
         }
 
         function sendSaveToCloud() {
@@ -487,16 +559,24 @@
                 const data = JSON.parse(text);
                 if (data.status === "success" && data.save) {
                     gameState = data.save;
-                    if(!gameState.inventory) gameState.inventory = [];
-                    if(gameState.superCharge === undefined) gameState.superCharge = 0;
+                    validateStateFields();
                 }
                 updateUI();
             })
             .catch(() => {
                 const local = localStorage.getItem(`rng_save_${userId}`);
                 if(local) gameState = JSON.parse(local);
+                validateStateFields();
                 updateUI();
             });
+        }
+
+        function validateStateFields() {
+            if(!gameState.inventory) gameState.inventory = [];
+            if(gameState.superCharge === undefined) gameState.superCharge = 0;
+            if(gameState.speedLevel === undefined) gameState.speedLevel = 0;
+            if(!gameState.buffs) gameState.buffs = { speed: 0, luck: 0 };
+            if(!gameState.activeBuffs) gameState.activeBuffs = { speedRolls: 0, luckRolls: 0 };
         }
 
         function switchTab(tabId) {
@@ -508,6 +588,7 @@
             document.getElementById('btn_tab_' + tabId).classList.add('active');
             
             if (tabId === 'inventory') renderInventory();
+            if (tabId === 'craft') renderCraftRecipes();
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
             if (tabId !== 'main' && isAutoRollActive) toggleAutoRoll();
             updateUI();
@@ -532,7 +613,6 @@
             const actionContainer = document.getElementById('actionContainer');
             const rollArea = document.getElementById('rollArea');
 
-            // Всегда прячем блок управления во время самой прокрутки
             controlBox.style.display = 'none';
             actionContainer.style.display = 'none';
             
@@ -549,6 +629,19 @@
 
             rarityDisplay.innerText = isSuperRoll ? "КВАНТОВЫЙ РАЗРЫВ МАТРИЦЫ..." : "СИНХРОНИЗАЦИЯ ЧАСТОТ...";
 
+            // РАСЧЕТ СКОРОСТИ АНИМАЦИИ КРУТКИ
+            let baseDuration = isSuperRoll ? 1400 : 850;
+            // Срез времени за счёт уровня скорости (макс 60%)
+            let speedModifier = Math.max(0.4, 1 - (gameState.speedLevel * 0.15)); 
+            let finalDuration = baseDuration * speedModifier;
+            
+            // Если активен крафтовый бафф скорости — срезаем ещё 40%
+            if (gameState.activeBuffs.speedRolls > 0) {
+                finalDuration *= 0.6;
+            }
+            // Ограничиваем минимальное время до 150мс, чтобы не ломался визуальный рендер
+            if (finalDuration < 150) finalDuration = 150;
+
             let interval = setInterval(() => {
                 AudioFX.playTick();
                 let temp = PHRASES_POOL[Math.floor(Math.random() * PHRASES_POOL.length)];
@@ -562,8 +655,18 @@
                 phraseDisplay.classList.remove('rolling');
                 rollArea.className = "roll-area";
 
+                // УМЕНЬШЕНИЕ АКТИВНЫХ БАФФОВ ПОСЛЕ КРУТКИ
+                let craftLuckBonus = 1.0;
+                if(gameState.activeBuffs.luckRolls > 0) {
+                    craftLuckBonus = 1.5;
+                    gameState.activeBuffs.luckRolls--;
+                }
+                if(gameState.activeBuffs.speedRolls > 0) {
+                    gameState.activeBuffs.speedRolls--;
+                }
+
                 let baseLuck = 1 + (gameState.luckLevel * 0.2);
-                let finalLuck = isSuperRoll ? (baseLuck * 5.0) : baseLuck;
+                let finalLuck = (isSuperRoll ? (baseLuck * 5.0) : baseLuck) * craftLuckBonus;
 
                 currentDrop = calculateRngDrop(finalLuck);
 
@@ -586,7 +689,6 @@
                     triggerScreenShake();
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
                     
-                    // Редкая фраза принудительно останавливает авторолл
                     if (isAutoRollActive) {
                         isAutoRollActive = false;
                         const autoBtn = document.getElementById('autoBtn');
@@ -611,17 +713,14 @@
                 isRollingRightNow = false;
                 updateUI();
 
-                // Динамическое обновление подписей кнопок выбора дропа
                 document.getElementById('sellBtn').innerText = `Утилизировать (+${currentDrop.price})`;
 
                 if (isAutoRollActive && !isRare) {
-                    // ЕСЛИ ВКЛЮЧЕН АВТОРОЛЛ: Показываем выбор на 1 секунду, затем авто-сохранение
                     actionContainer.style.display = 'flex';
                     controlBox.style.display = 'none';
 
                     autoTimeoutId = setTimeout(() => {
                         if (isAutoRollActive && currentDrop) {
-                            // Автоматически закидываем в Базу данных через 1 секунду
                             gameState.inventory.push({
                                 id: Date.now() + Math.random(),
                                 name: currentDrop.name,
@@ -637,26 +736,23 @@
                             
                             actionContainer.style.display = 'none';
                             updateUI();
-                            sendSaveToCloud();
+                            saveGame();
 
-                            // Запуск следующей крутки
                             if (isAutoRollActive && currentActiveTab === 'main') {
                                 startRngRoll();
                             } else {
                                 controlBox.style.display = 'flex';
                             }
                         }
-                    }, 1000); // Задержка показа ровно в 1 секунду
+                    }, 1000); 
 
                 } else {
-                    // РУЧНОЙ РЕЖИМ (или выпала редкая): Ждем решения игрока бесконечно
                     actionContainer.style.display = 'flex';
                     controlBox.style.display = 'none';
                 }
                 
-                sendSaveToCloud();
-                localStorage.setItem(`rng_save_${tg.initDataUnsafe?.user?.id || 12345}`, JSON.stringify(gameState));
-            }, isSuperRoll ? 1400 : 850);
+                saveGame();
+            }, finalDuration);
         }
 
         function toggleAutoRoll() {
@@ -677,7 +773,6 @@
                 autoBtn.classList.remove('active');
                 if (autoTimeoutId) clearTimeout(autoTimeoutId);
                 
-                // Если поток остановили во время ожидания — возвращаем стандартные кнопки
                 if (!isRollingRightNow && currentDrop) {
                     document.getElementById('actionContainer').style.display = 'flex';
                     document.getElementById('controlBox').style.display = 'none';
@@ -711,45 +806,163 @@
             }
             currentDrop = null;
             updateUI();
-            sendSaveToCloud();
-            localStorage.setItem(`rng_save_${tg.initDataUnsafe?.user?.id || 12345}`, JSON.stringify(gameState));
+            saveGame();
 
-            // Если ручной клик произошел во время активного авторолла — крутим дальше
             if (isAutoRollActive && currentActiveTab === 'main') {
                 startRngRoll();
             }
         }
 
-        function buyLuckUpgrade() {
-            let cost = Math.floor(upgradeConfig.baseCost * Math.pow(upgradeConfig.factor, gameState.luckLevel));
-            if (gameState.balance >= cost) {
-                AudioFX.playEpicWin();
-                gameState.balance -= cost;
-                gameState.luckLevel++;
-                updateUI();
-                sendSaveToCloud();
-                localStorage.setItem(`rng_save_${tg.initDataUnsafe?.user?.id || 12345}`, JSON.stringify(gameState));
+        function buyUpgrade(type) {
+            if(type === 'luck') {
+                let cost = Math.floor(upgradeConfig.baseCost * Math.pow(upgradeConfig.factor, gameState.luckLevel));
+                if (gameState.balance >= cost) {
+                    AudioFX.playEpicWin();
+                    gameState.balance -= cost;
+                    gameState.luckLevel++;
+                }
+            } else if(type === 'speed') {
+                let cost = Math.floor(upgradeConfig.baseCost * 1.8 * Math.pow(upgradeConfig.factor, gameState.speedLevel));
+                if (gameState.balance >= cost && gameState.speedLevel < 4) { // Макс 4 уровня (+60% скорость)
+                    AudioFX.playEpicWin();
+                    gameState.balance -= cost;
+                    gameState.speedLevel++;
+                }
+            }
+            updateUI();
+            saveGame();
+        }
+
+        // КРАФТ СИСТЕМА
+        function countItemsInInventory(name) {
+            return gameState.inventory.filter(item => item.name === name).length;
+        }
+
+        function renderCraftRecipes() {
+            let countSix = countItemsInInventory("sixseven");
+            let countAboba = countItemsInInventory("Aboba Custom");
+
+            const reqSix = document.getElementById('req_sixseven');
+            const reqAboba = document.getElementById('req_aboba');
+            const btnCraftSpeed = document.getElementById('btn_craft_speed');
+            const btnCraftLuck = document.getElementById('btn_craft_luck');
+
+            reqSix.innerText = `sixseven (${countSix}/3)`;
+            reqSix.style.color = countSix >= 3 ? "var(--accent-cyan)" : "#ff5c5c";
+            if(countSix >= 3) {
+                btnCraftSpeed.className = "btn-upgrade available"; btnCraftSpeed.innerText = "Запустить Квантовый Синтез";
+            } else {
+                btnCraftSpeed.className = "btn-upgrade not-available"; btnCraftSpeed.innerText = "Недостаточно ядер фраз";
+            }
+
+            reqAboba.innerText = `Aboba Custom (${countAboba}/2)`;
+            reqAboba.style.color = countAboba >= 2 ? "var(--accent-cyan)" : "#ff5c5c";
+            if(countAboba >= 2) {
+                btnCraftLuck.className = "btn-upgrade available"; btnCraftLuck.innerText = "Запустить Квантовый Синтез";
+            } else {
+                btnCraftLuck.className = "btn-upgrade not-available"; btnCraftLuck.innerText = "Недостаточно ядер фраз";
             }
         }
 
+        function craftModifier(type) {
+            if (type === 'speed') {
+                let count = countItemsInInventory("sixseven");
+                if (count >= 3) {
+                    AudioFX.playEpicWin();
+                    // Удаляем ровно 3 штуки из инвентаря
+                    let removed = 0;
+                    gameState.inventory = gameState.inventory.filter(item => {
+                        if (item.name === "sixseven" && removed < 3) { removed++; return false; }
+                        return true;
+                    });
+                    gameState.buffs.speed = (gameState.buffs.speed || 0) + 1;
+                    tg.showAlert("Синтез завершен! Получен: Матричный Ускоритель [x1]");
+                }
+            } else if (type === 'luck') {
+                let count = countItemsInInventory("Aboba Custom");
+                if (count >= 2) {
+                    AudioFX.playEpicWin();
+                    let removed = 0;
+                    gameState.inventory = gameState.inventory.filter(item => {
+                        if (item.name === "Aboba Custom" && removed < 2) { removed++; return false; }
+                        return true;
+                    });
+                    gameState.buffs.luck = (gameState.buffs.luck || 0) + 1;
+                    tg.showAlert("Синтез завершен! Получен: Фокусировщик Удачи [x1]");
+                }
+            }
+            renderCraftRecipes();
+            updateUI();
+            saveGame();
+        }
+
+        function activateBuff(type) {
+            AudioFX.playTick();
+            if (type === 'speed' && gameState.buffs.speed > 0) {
+                gameState.buffs.speed--;
+                gameState.activeBuffs.speedRolls = (gameState.activeBuffs.speedRolls || 0) + 10;
+            } else if (type === 'luck' && gameState.buffs.luck > 0) {
+                gameState.buffs.luck--;
+                gameState.activeBuffs.luckRolls = (gameState.activeBuffs.luckRolls || 0) + 10;
+            }
+            renderInventory();
+            updateUI();
+            saveGame();
+        }
+
         function updateUI() {
-            // Балансы и счетчики
             document.getElementById('balance').innerText = Math.floor(gameState.balance).toLocaleString('ru-RU') + " 💰";
             document.getElementById('totalRolls').innerText = gameState.totalRolls;
             document.getElementById('invCount').innerText = gameState.inventory.length;
-            document.getElementById('luckDisplay').innerText = `x${(1 + (gameState.luckLevel * 0.2)).toFixed(1)}`;
-            document.getElementById('lvl_luck_1').innerText = `Lvl ${gameState.luckLevel}`;
+            
+            // Расчет реального отображения удачи на главном экране
+            let displayLuck = (1 + (gameState.luckLevel * 0.2));
+            if (gameState.activeBuffs.luckRolls > 0) displayLuck *= 1.5;
+            document.getElementById('luckDisplay').innerText = `x${displayLuck.toFixed(1)}`;
+            
+            // Отображение скорости в панели статов
+            let visualSpeed = 100 + (gameState.speedLevel * 15);
+            if (gameState.activeBuffs.speedRolls > 0) visualSpeed += 40;
+            document.getElementById('speedStatText').innerText = `${visualSpeed}%`;
 
-            // Обновление цен в кнопке прокачки
-            let cost = Math.floor(upgradeConfig.baseCost * Math.pow(upgradeConfig.factor, gameState.luckLevel));
-            const btn = document.getElementById('btn_luck_1');
-            if (gameState.balance >= cost) {
-                btn.className = "btn-upgrade available"; btn.innerText = `Установить обновление • ${cost} 💰`;
+            document.getElementById('lvl_luck_1').innerText = `Lvl ${gameState.luckLevel}`;
+            document.getElementById('lvl_speed_1').innerText = gameState.speedLevel >= 4 ? "MAX Lvl" : `Lvl ${gameState.speedLevel}`;
+
+            // Цены модулей ядра
+            let costLuck = Math.floor(upgradeConfig.baseCost * Math.pow(upgradeConfig.factor, gameState.luckLevel));
+            const btnLuck = document.getElementById('btn_luck_1');
+            if (gameState.balance >= costLuck) {
+                btnLuck.className = "btn-upgrade available"; btnLuck.innerText = `Установить обновление • ${costLuck} 💰`;
             } else {
-                btn.className = "btn-upgrade not-available"; btn.innerText = `Недостаточно ресурсов • ${cost} 💰`;
+                btnLuck.className = "btn-upgrade not-available"; btnLuck.innerText = `Недостаточно ресурсов • ${costLuck} 💰`;
             }
 
-            // Аккуратное обновление прогресс-бара без сноса DOM структуры
+            let costSpeed = Math.floor(upgradeConfig.baseCost * 1.8 * Math.pow(upgradeConfig.factor, gameState.speedLevel));
+            const btnSpeed = document.getElementById('btn_speed_1');
+            if(gameState.speedLevel >= 4) {
+                btnSpeed.className = "btn-upgrade not-available"; btnSpeed.innerText = `Максимальный разгон достигнут`;
+            } else if (gameState.balance >= costSpeed) {
+                btnSpeed.className = "btn-upgrade available"; btnSpeed.innerText = `Разогнать шину • ${costSpeed} 💰`;
+            } else {
+                btnSpeed.className = "btn-upgrade not-available"; btnSpeed.innerText = `Недостаточно ресурсов • ${costSpeed} 💰`;
+            }
+
+            // Рендер виджетов активных баффов на главном экране прокрутки
+            const alertBox = document.getElementById('activeBuffsAlert');
+            alertBox.innerHTML = "";
+            let haveAlerts = false;
+            
+            if(gameState.activeBuffs.luckRolls > 0) {
+                haveAlerts = true;
+                alertBox.innerHTML += `<div style="background:rgba(255,190,11,0.15); border:1px solid var(--accent-gold); color:var(--accent-gold); font-size:10px; font-weight:700; padding:4px 8px; border-radius:8px;">🍀 УДАЧА x1.5 [Осталось роллов: ${gameState.activeBuffs.luckRolls}]</div>`;
+            }
+            if(gameState.activeBuffs.speedRolls > 0) {
+                haveAlerts = true;
+                alertBox.innerHTML += `<div style="background:rgba(0,245,212,0.15); border:1px solid var(--accent-cyan); color:var(--accent-cyan); font-size:10px; font-weight:700; padding:4px 8px; border-radius:8px;">⚡ РАЗГОН МАТРИЦЫ [Осталось роллов: ${gameState.activeBuffs.speedRolls}]</div>`;
+            }
+            alertBox.style.display = haveAlerts ? 'flex' : 'none';
+
+            // Прогресс квантового заряда
             const bar = document.getElementById('superBar');
             const sTitle = document.getElementById('superTitleText');
             const pText = document.getElementById('superProgressText');
@@ -777,6 +990,38 @@
             const container = document.getElementById('inventoryContainer');
             const sortType = document.getElementById('sortSelect').value;
             container.innerHTML = "";
+
+            // Сначала рендерим хранилище КРАФТ-модификаторов (Бустов) во вкладке инвентаря
+            const buffsContainer = document.getElementById('buffsContainer');
+            buffsContainer.innerHTML = "";
+            
+            let bSpeedCount = gameState.buffs.speed || 0;
+            let bLuckCount = gameState.buffs.luck || 0;
+
+            if (bSpeedCount === 0 && bLuckCount === 0) {
+                buffsContainer.innerHTML = `<div style="color: #4e5564; font-size: 11px; margin-top:6px;">Модули баффов не созданы. Загляните в меню 'Синтез'.</div>`;
+            } else {
+                if (bSpeedCount > 0) {
+                    buffsContainer.innerHTML += `
+                        <div class="buff-item">
+                            <div>
+                                <span style="font-size:12px; font-weight:700; color:var(--accent-cyan);">Матричный Ускоритель (Запасы: ${bSpeedCount})</span>
+                                <div style="font-size:10px; color:#6c757d;">Дает +10 быстрых квантовых тиков</div>
+                            </div>
+                            <button class="btn-use-buff" onclick="activateBuff('speed')">Запустить</button>
+                        </div>`;
+                }
+                if (bLuckCount > 0) {
+                    buffsContainer.innerHTML += `
+                        <div class="buff-item">
+                            <div>
+                                <span style="font-size:12px; font-weight:700; color:var(--accent-gold);">Фокусировщик Удачи (Запасы: ${bLuckCount})</span>
+                                <div style="font-size:10px; color:#6c757d;">Дает +10 роллов с удачей x1.5</div>
+                            </div>
+                            <button class="btn-use-buff" onclick="activateBuff('luck')">Запустить</button>
+                        </div>`;
+                }
+            }
             
             if (gameState.inventory.length === 0) {
                 container.innerHTML = `<div style="color: #4e5564; margin-top: 30px; font-size: 13px;">Хранилище пусто</div>`;
@@ -808,7 +1053,7 @@
             AudioFX.playSell();
             gameState.inventory = gameState.inventory.filter(i => i.id !== itemId);
             gameState.balance += price;
-            renderInventory(); updateUI(); sendSaveToCloud();
+            renderInventory(); updateUI(); saveGame();
         }
 
         function sellAllInventory() {
@@ -820,7 +1065,7 @@
                     gameState.inventory.forEach(item => totalIncome += item.price);
                     gameState.balance += totalIncome;
                     gameState.inventory = [];
-                    renderInventory(); updateUI(); sendSaveToCloud();
+                    renderInventory(); updateUI(); saveGame();
                 }
             });
         }
