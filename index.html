@@ -648,12 +648,12 @@
             const userId = tg.initDataUnsafe?.user?.id || 12345;
             const username = tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name || "Кибер Игрок";
             
-            // Заворачиваем всё в один параметр и кодируем, чтобы избежать обрезки строки
+            // Формируем структуру, которую ждет наш новый Google Script
             const payload = {
                 action: "save",
                 user_id: String(userId),
                 username: username,
-                save: JSON.stringify(gameState) // сериализуем внутреннее состояние отдельно
+                save: JSON.stringify(gameState) // Внутренний сейв кодируем в строку
             };
         
             fetch(DATABASE_URL, {
@@ -664,16 +664,24 @@
                 body: "data=" + encodeURIComponent(JSON.stringify(payload))
             }).catch(e => console.log(e));
         }
-
+        
         function initGameData() {
             const userId = tg.initDataUnsafe?.user?.id || 12345;
+            
+            const payload = {
+                action: "load",
+                user_id: String(userId)
+            };
+        
             fetch(DATABASE_URL.trim(), {
-                method: "POST", headers: { "Content-Type": "text/plain" },
-                body: JSON.stringify({ action: "load", user_id: userId })
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/x-www-form-urlencoded" 
+                },
+                body: "data=" + encodeURIComponent(JSON.stringify(payload))
             })
-            .then(res => res.text())
-            .then(text => {
-                const data = JSON.parse(text);
+            .then(res => res.json())
+            .then(data => {
                 if (data.status === "success" && data.save) {
                     gameState = data.save;
                     validateStateFields();
@@ -681,6 +689,7 @@
                 updateUI();
             })
             .catch(() => {
+                // Если база пустая или оффлайн, берем локальный сейв
                 const local = localStorage.getItem(`rng_save_${userId}`);
                 if(local) gameState = JSON.parse(local);
                 validateStateFields();
@@ -1239,50 +1248,56 @@
             const container = document.getElementById('leaderboardContainer');
             container.innerHTML = `<div style="color: #4e5564; margin-top: 30px; font-size: 13px;">Загрузка квантовых сигналов...</div>`;
             
+            const payload = { action: "leaderboard" };
+        
             fetch(DATABASE_URL, {
-                method: "POST", headers: { "Content-Type": "text/plain" },
-                body: JSON.stringify({ action: "leaderboard" })
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/x-www-form-urlencoded" 
+                },
+                body: "data=" + encodeURIComponent(JSON.stringify(payload))
             })
-            .then(res => res.json())
-            .then(data => {
-                if(data.status === "success" && data.leaderboard) {
-                    container.innerHTML = "";
-                    const myId = (tg.initDataUnsafe?.user?.id || 12345).toString();
-                    
-                    data.leaderboard.forEach((user, index) => {
-                        const div = document.createElement('div');
-                        const isMe = user.user_id.toString() === myId;
-                        div.className = `leaderboard-item ${isMe ? 'me' : ''}`;
+            // ... весь остальной код функции .then(res => res.json()) оставляешь как был
+                .then(res => res.json())
+                .then(data => {
+                    if(data.status === "success" && data.leaderboard) {
+                        container.innerHTML = "";
+                        const myId = (tg.initDataUnsafe?.user?.id || 12345).toString();
                         
-                        let rankClass = "";
-                        if(index === 0) rankClass = "top1";
-                        else if(index === 1) rankClass = "top2";
-                        else if(index === 2) rankClass = "top3";
-                        
-                        div.innerHTML = `
-                            <div style="display: flex; align-items: center; gap: 14px;">
-                                <div class="rank-badge ${rankClass}">${index + 1}</div>
-                                <div style="text-align: left;">
-                                    <div style="font-weight: 800; font-size: 15px; color: ${isMe ? 'var(--accent-gold)' : '#fff'}">
-                                        ${user.username} ${isMe ? ' (Вы)' : ''}
+                        data.leaderboard.forEach((user, index) => {
+                            const div = document.createElement('div');
+                            const isMe = user.user_id.toString() === myId;
+                            div.className = `leaderboard-item ${isMe ? 'me' : ''}`;
+                            
+                            let rankClass = "";
+                            if(index === 0) rankClass = "top1";
+                            else if(index === 1) rankClass = "top2";
+                            else if(index === 2) rankClass = "top3";
+                            
+                            div.innerHTML = `
+                                <div style="display: flex; align-items: center; gap: 14px;">
+                                    <div class="rank-badge ${rankClass}">${index + 1}</div>
+                                    <div style="text-align: left;">
+                                        <div style="font-weight: 800; font-size: 15px; color: ${isMe ? 'var(--accent-gold)' : '#fff'}">
+                                            ${user.username} ${isMe ? ' (Вы)' : ''}
+                                        </div>
+                                        <div style="font-size: 11px; color: #4e5564; margin-top: 2px;">ID: ${user.user_id}</div>
                                     </div>
-                                    <div style="font-size: 11px; color: #4e5564; margin-top: 2px;">ID: ${user.user_id}</div>
                                 </div>
-                            </div>
-                            <div style="font-weight: 800; color: var(--accent-gold); font-size: 15px;">
-                                ${Math.floor(user.balance).toLocaleString('ru-RU')} 💰
-                            </div>
-                        `;
-                        container.appendChild(div);
-                    });
-                } else {
-                    container.innerHTML = `<div style="color: #ff5c5c; margin-top: 30px; font-size: 13px;">Ошибка обработки матрицы лидеров</div>`;
-                }
-            })
-            .catch(() => {
-                container.innerHTML = `<div style="color: #ff5c5c; margin-top: 30px; font-size: 13px;">Ошибка синхронизации с базой данных</div>`;
-            });
-        }
+                                <div style="font-weight: 800; color: var(--accent-gold); font-size: 15px;">
+                                    ${Math.floor(user.balance).toLocaleString('ru-RU')} 💰
+                                </div>
+                            `;
+                            container.appendChild(div);
+                        });
+                    } else {
+                        container.innerHTML = `<div style="color: #ff5c5c; margin-top: 30px; font-size: 13px;">Ошибка обработки матрицы лидеров</div>`;
+                    }
+                })
+                .catch(() => {
+                    container.innerHTML = `<div style="color: #ff5c5c; margin-top: 30px; font-size: 13px;">Ошибка синхронизации с базой данных</div>`;
+                });
+            }
 
         window.onload = function() { initGameData(); };
 </script>
