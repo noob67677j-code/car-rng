@@ -647,9 +647,21 @@
         function sendSaveToCloud() {
             const userId = tg.initDataUnsafe?.user?.id || 12345;
             const username = tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name || "Кибер Игрок";
+            
+            // Заворачиваем всё в один параметр и кодируем, чтобы избежать обрезки строки
+            const payload = {
+                action: "save",
+                user_id: String(userId),
+                username: username,
+                save: JSON.stringify(gameState) // сериализуем внутреннее состояние отдельно
+            };
+        
             fetch(DATABASE_URL, {
-                method: "POST", headers: { "Content-Type": "text/plain" },
-                body: JSON.stringify({ action: "save", user_id: userId, username: username, save: gameState })
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/x-www-form-urlencoded" 
+                },
+                body: "data=" + encodeURIComponent(JSON.stringify(payload))
             }).catch(e => console.log(e));
         }
 
