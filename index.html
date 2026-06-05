@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Phrases RNG • Persistent Auto-Roll Update</title>
+    <title>Phrases RNG • Smart Bulk Sell Update</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -324,12 +324,18 @@
 
         /* Инвентарь и бусты */
         .inventory-controls {
-            background: rgba(255, 255, 255, 0.02); padding: 12px; border-radius: 16px;
-            border: 1px solid var(--border-color); margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px;
+            background: rgba(255, 255, 255, 0.02); padding: 14px; border-radius: 20px;
+            border: 1px solid var(--border-color); margin-bottom: 14px; display: flex; flex-direction: column; gap: 12px;
         }
         .sort-row { display: flex; justify-content: space-between; align-items: center; }
         .sort-select { background: #14161c; color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 600; }
-        .btn-sell-all { background: rgba(239, 68, 68, 0.12); color: #ff5c5c; border: 1px solid rgba(239, 68, 68, 0.2); padding: 12px; border-radius: 12px; font-weight: 700; font-size: 12px; cursor: pointer; width: 100%; }
+        
+        .bulk-sell-box {
+            display: flex; flex-direction: column; gap: 8px; background: rgba(0, 0, 0, 0.2); 
+            padding: 10px; border-radius: 12px; border: 1px dashed rgba(255, 255, 255, 0.05);
+        }
+        .btn-sell-all { background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%); color: #ff5c5c; border: 1px solid rgba(239, 68, 68, 0.3); padding: 12px; border-radius: 12px; font-weight: 800; font-size: 12px; cursor: pointer; width: 100%; letter-spacing: 0.5px; transition: all 0.2s; }
+        .btn-sell-all:active { transform: scale(0.98); }
 
         .inventory-list { display: flex; flex-direction: column; gap: 8px; width: 100%; }
         .inv-item { display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); border: 1px solid var(--border-color); padding: 14px 18px; border-radius: 18px; }
@@ -488,7 +494,20 @@
                     <option value="cheap">Сначала дешевые</option>
                 </select>
             </div>
-            <button class="btn-sell-all" onclick="sellAllInventory()">🔥 ПРОДАТЬ ВСЁ</button>
+            
+            <!-- Настраиваемый блок пакетной продажи -->
+            <div class="bulk-sell-box">
+                <div class="sort-row">
+                    <span style="font-size: 11px; color: #8a92a6; font-weight: 700; text-transform: uppercase;">Критерий очистки:</span>
+                    <select id="bulkSellSelect" class="sort-select" onchange="saveBulkSettings()">
+                        <option value="10">Все фетч-фразы (ниже 1 из 25)</option>
+                        <option value="75">Весь серый хлам (ниже 1 из 250)</option>
+                        <option value="750">Всё кроме супер-раритетов (ниже 1 из 2000)</option>
+                        <option value="all">Абсолютно ВСЁ (полная чистка)</option>
+                    </select>
+                </div>
+                <button class="btn-sell-all" onclick="sellAllInventory()">🔥 ВЫПОЛНИТЬ УТИЛИЗАЦИЮ</button>
+            </div>
         </div>
 
         <div class="inventory-list" id="inventoryContainer"></div>
@@ -587,7 +606,8 @@
             inventory: [],
             buffs: { speed: 0, luck: 0 },
             activeBuffs: { speedRolls: 0, luckRolls: 0 },
-            autoRollStopWeight: 150 
+            autoRollStopWeight: 150,
+            bulkSellLimit: "75" // Настройка лимита по умолчанию ("75" = ниже 1 из 250)
         };
 
         const upgradeConfig = { baseCost: 100, factor: 1.5 };
@@ -644,14 +664,24 @@
             if(!gameState.buffs) gameState.buffs = { speed: 0, luck: 0 };
             if(!gameState.activeBuffs) gameState.activeBuffs = { speedRolls: 0, luckRolls: 0 };
             if(gameState.autoRollStopWeight === undefined) gameState.autoRollStopWeight = 150;
+            if(gameState.bulkSellLimit === undefined) gameState.bulkSellLimit = "75";
             
             const selectEl = document.getElementById('stopRaritySelect');
             if (selectEl) selectEl.value = gameState.autoRollStopWeight.toString();
+
+            const bulkEl = document.getElementById('bulkSellSelect');
+            if (bulkEl) bulkEl.value = gameState.bulkSellLimit;
         }
 
         function saveAutoRollSettings() {
             const selectEl = document.getElementById('stopRaritySelect');
             gameState.autoRollStopWeight = parseInt(selectEl.value, 10);
+            saveGame();
+        }
+
+        function saveBulkSettings() {
+            const bulkEl = document.getElementById('bulkSellSelect');
+            gameState.bulkSellLimit = bulkEl.value;
             saveGame();
         }
 
@@ -792,17 +822,11 @@
 
                     autoTimeoutId = setTimeout(() => {
                         if (isAutoRollActive && currentDrop) {
-                            AudioFX.playSell();
+                            AudioFX.playTick();
                             gameState.inventory.push({
-                                id: Date.now() + Math.random(), 
-                                name: currentDrop.name, 
-                                text: currentDrop.text,
-                                price: currentDrop.price, 
-                                color: currentDrop.color, 
-                                fx: currentDrop.fx, 
-                                weight: currentDrop.weight
+                                id: Date.now() + Math.random(), name: currentDrop.name, text: currentDrop.text,
+                                price: currentDrop.price, color: currentDrop.color, fx: currentDrop.fx, weight: currentDrop.weight
                             });
-                            
                             currentDrop = null;
                             phraseDisplay.className = "phrase-display";
                             phraseDisplay.style.textShadow = 'none';
@@ -819,13 +843,8 @@
                     }, 400); 
 
                 } else {
-                    if (isAutoRollActive && isStopPhrase) {
-                        actionContainer.style.display = 'flex';
-                        controlBox.style.display = 'none';
-                    } else {
-                        actionContainer.style.display = 'flex';
-                        controlBox.style.display = 'none';
-                    }
+                    actionContainer.style.display = 'flex';
+                    controlBox.style.display = 'none';
                 }
                 
                 saveGame();
@@ -850,7 +869,6 @@
                 autoBtn.classList.remove('active');
                 if (autoTimeoutId) clearTimeout(autoTimeoutId);
                 
-                // Возвращаем корректное состояние интерфейса при ручной остановке
                 if (!isRollingRightNow) {
                     if (currentDrop) {
                         document.getElementById('actionContainer').style.display = 'flex';
@@ -903,7 +921,7 @@
                 }
             } else if(type === 'speed') {
                 let cost = Math.floor(upgradeConfig.baseCost * 1.8 * Math.pow(upgradeConfig.factor, gameState.speedLevel));
-                if (gameState.balance >= cost && gameState.speedLevel < 7) { 
+                if (gameState.balance >= cost && gameState.speedLevel < 4) { 
                     AudioFX.playEpicWin();
                     gameState.balance -= cost;
                     gameState.speedLevel++;
@@ -1014,7 +1032,7 @@
 
             let costSpeed = Math.floor(upgradeConfig.baseCost * 1.8 * Math.pow(upgradeConfig.factor, gameState.speedLevel));
             const btnSpeed = document.getElementById('btn_speed_1');
-            if(gameState.speedLevel >= 7) {
+            if(gameState.speedLevel >= 4) {
                 btnSpeed.className = "btn-upgrade not-available"; btnSpeed.innerText = `Максимальный разгон достигнут`;
             } else if (gameState.balance >= costSpeed) {
                 btnSpeed.className = "btn-upgrade available"; btnSpeed.innerText = `Разогнать шину • ${costSpeed} 💰`;
@@ -1065,6 +1083,11 @@
             const selectEl = document.getElementById('stopRaritySelect');
             if (selectEl && gameState.autoRollStopWeight !== undefined) {
                 selectEl.value = gameState.autoRollStopWeight.toString();
+            }
+
+            const bulkEl = document.getElementById('bulkSellSelect');
+            if (bulkEl && gameState.bulkSellLimit !== undefined) {
+                bulkEl.value = gameState.bulkSellLimit;
             }
         }
 
@@ -1139,14 +1162,44 @@
 
         function sellAllInventory() {
             if (gameState.inventory.length === 0) return;
-            tg.showConfirm("Вы точно хотите продать ВСЁ из инвентаря?", (confirmed) => {
+            
+            const limit = gameState.bulkSellLimit;
+            let toSell = [];
+            let toKeep = [];
+
+            // Фильтруем инвентарь на основе выбранной настройки
+            if (limit === "all") {
+                toSell = [...gameState.inventory];
+            } else {
+                const maxWeight = parseInt(limit, 10);
+                gameState.inventory.forEach(item => {
+                    if ((item.weight || 0) <= maxWeight) {
+                        toSell.push(item);
+                    } else {
+                        toKeep.push(item);
+                    }
+                });
+            }
+
+            if (toSell.length === 0) {
+                tg.showAlert("В инвентаре нет фраз, подходящих под текущий критерий утилизации.");
+                return;
+            }
+
+            let totalIncome = 0;
+            toSell.forEach(item => totalIncome += item.price);
+
+            let confirmMsg = `Вы точно хотите продать выбранные фразы (${toSell.length} шт.) за ${totalIncome} 💰?`;
+            if (limit === "all") confirmMsg = "ВНИМАНИЕ! Вы точно хотите полностью очистить инвентарь и продать ВСЁ?";
+
+            tg.showConfirm(confirmMsg, (confirmed) => {
                 if (confirmed) {
                     AudioFX.playSell();
-                    let totalIncome = 0;
-                    gameState.inventory.forEach(item => totalIncome += item.price);
                     gameState.balance += totalIncome;
-                    gameState.inventory = [];
-                    renderInventory(); updateUI(); saveGame();
+                    gameState.inventory = toKeep; // Оставляем только те, которые не подошли под критерий
+                    renderInventory(); 
+                    updateUI(); 
+                    saveGame();
                 }
             });
         }
