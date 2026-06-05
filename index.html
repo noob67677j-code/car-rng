@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Phrases RNG • Craft & Speed Update</title>
+    <title>Phrases RNG • Smart Bulk Sell Update</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -149,13 +149,13 @@
         }
         .tab-btn {
             background: none; border: none; color: #525866;
-            font-size: 11px; font-weight: 600; cursor: pointer;
+            font-size: 10px; font-weight: 600; cursor: pointer;
             display: flex; flex-direction: column; align-items: center; gap: 4px; width: 19%;
         }
         .tab-btn .icon { font-size: 18px; opacity: 0.5; transition: transform 0.2s; }
         .tab-btn.active { color: var(--text-main); }
         .tab-btn.active .icon {
-            opacity: 1; transform: scale(1.2);
+            opacity: 1; transform: scale(1.15);
             filter: drop-shadow(0 0 10px var(--accent-purple));
         }
         .tab-content { display: none; }
@@ -165,7 +165,7 @@
         /* Основная зона ролла */
         .roll-area {
             position: relative;
-            min-height: 320px;
+            min-height: 260px;
             background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.01), transparent 100%), var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 32px;
@@ -209,7 +209,7 @@
             margin-bottom: 24px;
         }
         
-        .control-box { display: flex; flex-direction: column; gap: 10px; width: 90%; align-items: center; }
+        .control-box { display: flex; flex-direction: column; gap: 10px; width: 100%; align-items: center; }
         
         .btn-roll {
             background: linear-gradient(135deg, #1f242f 0%, #0f1219 100%);
@@ -226,15 +226,62 @@
             border: none;
         }
 
+        /* Постоянная независимая панель Авто-ролла */
+        .autoroll-permanent-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 14px;
+            margin-top: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+
         .btn-autoroll {
             background: rgba(255, 255, 255, 0.03); color: #8a92a6;
-            border: 1px solid var(--border-color); padding: 12px 20px; border-radius: 14px;
-            font-size: 12px; font-weight: 700; letter-spacing: 1px; cursor: pointer;
-            transition: all 0.2s; width: 75%;
+            border: 1px solid var(--border-color); padding: 14px 20px; border-radius: 16px;
+            font-size: 13px; font-weight: 800; letter-spacing: 1px; cursor: pointer;
+            transition: all 0.2s; width: 100%; box-sizing: border-box;
         }
         .btn-autoroll.active {
-            background: rgba(255, 190, 11, 0.1); color: var(--accent-gold);
-            border-color: rgba(255, 190, 11, 0.3); box-shadow: 0 0 15px rgba(255, 190, 11, 0.1);
+            background: linear-gradient(135deg, rgba(255, 190, 11, 0.2) 0%, rgba(255, 100, 11, 0.2) 100%);
+            color: var(--accent-gold);
+            border-color: rgba(255, 190, 11, 0.4); 
+            box-shadow: 0 0 20px rgba(255, 190, 11, 0.15);
+            animation: pulseBorder 1.5s infinite alternate;
+        }
+        @keyframes pulseBorder {
+            from { border-color: rgba(255, 190, 11, 0.3); }
+            to { border-color: rgba(255, 190, 11, 0.6); }
+        }
+
+        .autoroll-settings {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 2px 6px;
+        }
+        .autoroll-settings label {
+            font-size: 11px;
+            color: #6c757d;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .autoroll-select {
+            background: #14161c;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            outline: none;
         }
         
         .rolling { animation: matrixBlur 0.06s infinite alternate; }
@@ -243,9 +290,9 @@
             to { filter: blur(4px) brightness(0.7); transform: scale(1.04); } 
         }
 
-        .action-container { display: none; gap: 12px; width: 95%; }
+        .action-container { display: none; gap: 12px; width: 100%; }
         .btn {
-            border: none; padding: 16px 16px; border-radius: 18px;
+            border: none; padding: 18px 16px; border-radius: 20px;
             font-weight: 700; cursor: pointer; width: 100%; font-size: 14px; transition: all 0.2s;
         }
         .btn-sell { background: rgba(239, 68, 68, 0.08); color: #ff5c5c; border: 1px solid rgba(239, 68, 68, 0.15); }
@@ -277,12 +324,18 @@
 
         /* Инвентарь и бусты */
         .inventory-controls {
-            background: rgba(255, 255, 255, 0.02); padding: 12px; border-radius: 16px;
-            border: 1px solid var(--border-color); margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px;
+            background: rgba(255, 255, 255, 0.02); padding: 14px; border-radius: 20px;
+            border: 1px solid var(--border-color); margin-bottom: 14px; display: flex; flex-direction: column; gap: 12px;
         }
         .sort-row { display: flex; justify-content: space-between; align-items: center; }
         .sort-select { background: #14161c; color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 600; }
-        .btn-sell-all { background: rgba(239, 68, 68, 0.12); color: #ff5c5c; border: 1px solid rgba(239, 68, 68, 0.2); padding: 12px; border-radius: 12px; font-weight: 700; font-size: 12px; cursor: pointer; width: 100%; }
+        
+        .bulk-sell-box {
+            display: flex; flex-direction: column; gap: 8px; background: rgba(0, 0, 0, 0.2); 
+            padding: 10px; border-radius: 12px; border: 1px dashed rgba(255, 255, 255, 0.05);
+        }
+        .btn-sell-all { background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%); color: #ff5c5c; border: 1px solid rgba(239, 68, 68, 0.3); padding: 12px; border-radius: 12px; font-weight: 800; font-size: 12px; cursor: pointer; width: 100%; letter-spacing: 0.5px; transition: all 0.2s; }
+        .btn-sell-all:active { transform: scale(0.98); }
 
         .inventory-list { display: flex; flex-direction: column; gap: 8px; width: 100%; }
         .inv-item { display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); border: 1px solid var(--border-color); padding: 14px 18px; border-radius: 18px; }
@@ -314,15 +367,25 @@
         .recipe-req { font-size: 12px; color: #8a92a6; margin: 6px 0 12px 0; }
         .recipe-req span { font-weight: 700; }
 
-        /* Таблица лидеров */
-        .leaderboard-list { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 10px; }
-        .lead-item { display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); border: 1px solid var(--border-color); padding: 14px 18px; border-radius: 18px; }
-        .lead-rank { font-weight: 900; font-size: 16px; width: 28px; text-align: left; }
-        .rank-1 { color: var(--accent-gold); text-shadow: 0 0 10px rgba(255,190,11,0.4); }
-        .rank-2 { color: #e5e5e5; }
-        .rank-3 { color: #cd7f32; }
-        .lead-name { font-weight: 700; font-size: 15px; color: var(--text-main); flex-grow: 1; text-align: left; padding-left: 6px; }
-        .lead-bal { font-weight: 800; color: var(--accent-gold); font-size: 14px; }
+        /* Стили для вкадки ТОП */
+        .leaderboard-list { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 10px; }
+        .leaderboard-item {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            padding: 14px 18px; border-radius: 18px; transition: all 0.2s;
+        }
+        .leaderboard-item.me {
+            border-color: rgba(255, 190, 11, 0.3);
+            background: linear-gradient(90deg, rgba(255, 190, 11, 0.05) 0%, rgba(0,0,0,0) 100%);
+        }
+        .rank-badge {
+            font-weight: 900; font-size: 14px; width: 28px; height: 28px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.04); color: #8a92a6;
+        }
+        .rank-badge.top1 { background: #ffbe0b; color: #000; box-shadow: 0 0 15px rgba(255,190,11,0.4); }
+        .rank-badge.top2 { background: #e2e2e2; color: #000; }
+        .rank-badge.top3 { background: #cd7f32; color: #000; }
     </style>
 </head>
 <body>
@@ -366,12 +429,25 @@
             
             <div class="control-box" id="controlBox">
                 <button class="btn-roll" id="rollBtn" onclick="startRngRoll()">ГЕНЕРИРОВАТЬ СИГНАЛ</button>
-                <button class="btn-autoroll" id="autoBtn" onclick="toggleAutoRoll()">АВТО-ПОТОК [ВЫКЛ]</button>
             </div>
             
             <div class="action-container" id="actionContainer">
                 <button class="btn btn-sell" id="sellBtn" onclick="handleRollChoice('sell')">Утилизировать</button>
                 <button class="btn btn-keep" id="keepBtn" onclick="handleRollChoice('keep')">Сохранить Ядро</button>
+            </div>
+        </div>
+
+        <div class="autoroll-permanent-panel">
+            <button class="btn-autoroll" id="autoBtn" onclick="toggleAutoRoll()">АВТО-ПОТОК [ВЫКЛ]</button>
+            <div class="autoroll-settings">
+                <label for="stopRaritySelect">Остановка на:</label>
+                <select id="stopRaritySelect" class="autoroll-select" onchange="saveAutoRollSettings()">
+                    <option value="25">1 из 25 и выше</option>
+                    <option value="75">1 из 75 и выше</option>
+                    <option value="150" selected>1 из 250 и выше</option>
+                    <option value="750">1 из 750 и выше</option>
+                    <option value="2000">1 из 2000 и выше</option>
+                </select>
             </div>
         </div>
     </div>
@@ -401,14 +477,14 @@
         <div class="craft-recipe">
             <div style="font-weight:700; color:var(--accent-purple); font-size:16px;">⚡ Матричный Ускоритель (Буст Скорости)</div>
             <div style="font-size:12px; color:#cfd2da; margin-top:4px;">Сокращает время генерации сигналов ещё на 40% на 10 роллов.</div>
-            <div class="recipe-req">Требуется: <span id="req_sixseven">sixseven (0/3)</span></div>
+            <div class="recipe-req">Требуется: <span id="req_sixseven">жиза (0/3)</span></div>
             <button class="btn-upgrade available" id="btn_craft_speed" onclick="craftModifier('speed')">Синтезировать Модуль</button>
         </div>
 
         <div class="craft-recipe">
             <div style="font-weight:700; color:var(--accent-gold); font-size:16px;">🍀 Фокусировщик Удачи (Буст Удачи x1.5)</div>
             <div style="font-size:12px; color:#cfd2da; margin-top:4px;">Идеально настраивает линзы вероятностей на 10 роллов.</div>
-            <div class="recipe-req">Требуется: <span id="req_aboba">Aboba Custom (0/2)</span></div>
+            <div class="recipe-req">Требуется: <span id="req_aboba">отказано (0/2)</span></div>
             <button class="btn-upgrade available" id="btn_craft_luck" onclick="craftModifier('luck')">Синтезировать Модуль</button>
         </div>
     </div>
@@ -430,17 +506,29 @@
                     <option value="cheap">Сначала дешевые</option>
                 </select>
             </div>
-            <button class="btn-sell-all" onclick="sellAllInventory()">🔥 ПРОДАТЬ ВСЁ</button>
+            
+            <div class="bulk-sell-box">
+                <div class="sort-row">
+                    <span style="font-size: 11px; color: #8a92a6; font-weight: 700; text-transform: uppercase;">Критерий очистки:</span>
+                    <select id="bulkSellSelect" class="sort-select" onchange="saveBulkSettings()">
+                        <option value="10">Все фетч-фразы (ниже 1 из 25)</option>
+                        <option value="75">Весь серый хлам (ниже 1 из 250)</option>
+                        <option value="750">Всё кроме супер-раритетов (ниже 1 из 2000)</option>
+                        <option value="all">Абсолютно ВСЁ (полная чистка)</option>
+                    </select>
+                </div>
+                <button class="btn-sell-all" onclick="sellAllInventory()">🔥 ВЫПОЛНИТЬ УТИЛИЗАЦИЮ</button>
+            </div>
         </div>
 
         <div class="inventory-list" id="inventoryContainer"></div>
     </div>
 
     <div id="tab_leaderboard" class="tab-content">
-        <h1>Таблица Лидеров</h1>
-        <p>Топ-10 систем по объёму Квантового Баланса</p>
+        <h1>Матрица Лидеров</h1>
+        <p>Рейтинг систем по объему сгенерированных ресурсов</p>
         <div class="leaderboard-list" id="leaderboardContainer">
-            <div style="color: #4e5564; margin-top: 20px; font-size: 13px;">Загрузка матрицы рейтинга...</div>
+            <div style="color: #4e5564; margin-top: 30px; font-size: 13px;">Загрузка квантовых сигналов...</div>
         </div>
     </div>
 
@@ -456,7 +544,7 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const DATABASE_URL = "https://script.google.com/macros/s/AKfycbwgLV--Q71Z1m5WgWs0TKgN51ev4IyTbriO7X_NWh16D51BnwddUB6WqTJ_XFH4xZHU/exec"; 
+        const DATABASE_URL = "https://script.google.com/macros/s/AKfycbxKRnV7HsBX7TN3iKIiyU0_h4qYkz2jEVOokEBAb9YThHOviMpGAKlMHw-pVIwFKqqM/exec"; 
 
         let currentActiveTab = 'main';
         let currentDrop = null;
@@ -535,14 +623,10 @@
             totalRolls: 0,
             superCharge: 0, 
             inventory: [],
-            buffs: { 
-                speed: 0, 
-                luck: 0  
-            },
-            activeBuffs: {
-                speedRolls: 0,
-                luckRolls: 0
-            }
+            buffs: { speed: 0, luck: 0 },
+            activeBuffs: { speedRolls: 0, luckRolls: 0 },
+            autoRollStopWeight: 150,
+            bulkSellLimit: "75"
         };
 
         const upgradeConfig = { baseCost: 100, factor: 1.5 };
@@ -598,6 +682,26 @@
             if(gameState.speedLevel === undefined) gameState.speedLevel = 0;
             if(!gameState.buffs) gameState.buffs = { speed: 0, luck: 0 };
             if(!gameState.activeBuffs) gameState.activeBuffs = { speedRolls: 0, luckRolls: 0 };
+            if(gameState.autoRollStopWeight === undefined) gameState.autoRollStopWeight = 150;
+            if(gameState.bulkSellLimit === undefined) gameState.bulkSellLimit = "75";
+            
+            const selectEl = document.getElementById('stopRaritySelect');
+            if (selectEl) selectEl.value = gameState.autoRollStopWeight.toString();
+
+            const bulkEl = document.getElementById('bulkSellSelect');
+            if (bulkEl) bulkEl.value = gameState.bulkSellLimit;
+        }
+
+        function saveAutoRollSettings() {
+            const selectEl = document.getElementById('stopRaritySelect');
+            gameState.autoRollStopWeight = parseInt(selectEl.value, 10);
+            saveGame();
+        }
+
+        function saveBulkSettings() {
+            const bulkEl = document.getElementById('bulkSellSelect');
+            gameState.bulkSellLimit = bulkEl.value;
+            saveGame();
         }
 
         function switchTab(tabId) {
@@ -651,7 +755,6 @@
 
             rarityDisplay.innerText = isSuperRoll ? "КВАНТОВЫЙ РАЗРЫВ МАТРИЦЫ..." : "СИНХРОНИЗАЦИЯ ЧАСТОТ...";
 
-            // РАСЧЕТ СКОРОСТИ АНИМАЦИИ КРУТКИ
             let baseDuration = isSuperRoll ? 1400 : 850;
             let speedModifier = Math.max(0.4, 1 - (gameState.speedLevel * 0.15)); 
             let finalDuration = baseDuration * speedModifier;
@@ -700,9 +803,9 @@
                 rarityDisplay.innerText = `Индекс Сигнала: ${currentDrop.text}`;
                 gameState.totalRolls++;
 
-                const isRare = currentDrop.weight >= 150; 
+                const isStopPhrase = currentDrop.weight >= gameState.autoRollStopWeight; 
                 
-                if (isRare) {
+                if (isStopPhrase) {
                     AudioFX.playEpicWin();
                     triggerScreenShake();
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
@@ -733,26 +836,21 @@
 
                 document.getElementById('sellBtn').innerText = `Утилизировать (+${currentDrop.price})`;
 
-                if (isAutoRollActive && !isRare) {
-                    actionContainer.style.display = 'flex';
+                if (isAutoRollActive && !isStopPhrase) {
+                    actionContainer.style.display = 'none';
                     controlBox.style.display = 'none';
 
                     autoTimeoutId = setTimeout(() => {
                         if (isAutoRollActive && currentDrop) {
+                            AudioFX.playTick();
                             gameState.inventory.push({
-                                id: Date.now() + Math.random(),
-                                name: currentDrop.name,
-                                text: currentDrop.text,
-                                price: currentDrop.price,
-                                color: currentDrop.color,
-                                fx: currentDrop.fx,
-                                weight: currentDrop.weight
+                                id: Date.now() + Math.random(), name: currentDrop.name, text: currentDrop.text,
+                                price: currentDrop.price, color: currentDrop.color, fx: currentDrop.fx, weight: currentDrop.weight
                             });
                             currentDrop = null;
                             phraseDisplay.className = "phrase-display";
                             phraseDisplay.style.textShadow = 'none';
                             
-                            actionContainer.style.display = 'none';
                             updateUI();
                             saveGame();
 
@@ -762,7 +860,7 @@
                                 controlBox.style.display = 'flex';
                             }
                         }
-                    }, 1000); 
+                    }, 400); 
 
                 } else {
                     actionContainer.style.display = 'flex';
@@ -791,12 +889,14 @@
                 autoBtn.classList.remove('active');
                 if (autoTimeoutId) clearTimeout(autoTimeoutId);
                 
-                if (!isRollingRightNow && currentDrop) {
-                    document.getElementById('actionContainer').style.display = 'flex';
-                    document.getElementById('controlBox').style.display = 'none';
-                } else if (!isRollingRightNow) {
-                    document.getElementById('actionContainer').style.display = 'none';
-                    document.getElementById('controlBox').style.display = 'flex';
+                if (!isRollingRightNow) {
+                    if (currentDrop) {
+                        document.getElementById('actionContainer').style.display = 'flex';
+                        document.getElementById('controlBox').style.display = 'none';
+                    } else {
+                        document.getElementById('actionContainer').style.display = 'none';
+                        document.getElementById('controlBox').style.display = 'flex';
+                    }
                 }
             }
         }
@@ -833,7 +933,7 @@
 
         function buyUpgrade(type) {
             if(type === 'luck') {
-                let cost = Math.floor(upgradeConfig.baseCost * Math.pow(upgradeConfig.factor, gameState.luckLevel));
+                let cost = Math.floor(upgradeConfig.baseCost * 1.25 * Math.pow(upgradeConfig.factor, gameState.luckLevel));
                 if (gameState.balance >= cost) {
                     AudioFX.playEpicWin();
                     gameState.balance -= cost;
@@ -942,7 +1042,7 @@
             document.getElementById('lvl_luck_1').innerText = `Lvl ${gameState.luckLevel}`;
             document.getElementById('lvl_speed_1').innerText = gameState.speedLevel >= 4 ? "MAX Lvl" : `Lvl ${gameState.speedLevel}`;
 
-            let costLuck = Math.floor(upgradeConfig.baseCost * Math.pow(upgradeConfig.factor, gameState.luckLevel));
+            let costLuck = Math.floor(upgradeConfig.baseCost * 1.25 * Math.pow(upgradeConfig.factor, gameState.luckLevel));
             const btnLuck = document.getElementById('btn_luck_1');
             if (gameState.balance >= costLuck) {
                 btnLuck.className = "btn-upgrade available"; btnLuck.innerText = `Установить обновление • ${costLuck} 💰`;
@@ -986,14 +1086,28 @@
                 bar.classList.add('charged');
                 sTitle.innerText = "ЯДРО СВЕРХЗАРЯЖЕНО! (Удача х5.0)";
                 sTitle.style.color = "var(--accent-gold)";
-                rollBtn.className = "btn-roll super-ready";
-                rollBtn.innerText = "💥 ВЫПУСТИТЬ СВЕРХЗАРЯД";
+                if (rollBtn) {
+                    rollBtn.className = "btn-roll super-ready";
+                    rollBtn.innerText = "💥 ВЫПУСТИТЬ СВЕРХЗАРЯД";
+                }
             } else {
                 bar.classList.remove('charged');
                 sTitle.innerText = "Сверхзаряд Ядра";
                 sTitle.style.color = "#6c757d";
-                rollBtn.className = "btn-roll";
-                rollBtn.innerText = "ГЕНЕРИРОВАТЬ СИГНАЛ";
+                if (rollBtn) {
+                    rollBtn.className = "btn-roll";
+                    rollBtn.innerText = "ГЕНЕРИРОВАТЬ СИГНАЛ";
+                }
+            }
+            
+            const selectEl = document.getElementById('stopRaritySelect');
+            if (selectEl && gameState.autoRollStopWeight !== undefined) {
+                selectEl.value = gameState.autoRollStopWeight.toString();
+            }
+
+            const bulkEl = document.getElementById('bulkSellSelect');
+            if (bulkEl && gameState.bulkSellLimit !== undefined) {
+                bulkEl.value = gameState.bulkSellLimit;
             }
         }
 
@@ -1068,60 +1182,93 @@
 
         function sellAllInventory() {
             if (gameState.inventory.length === 0) return;
-            tg.showConfirm("Вы точно хотите продать ВСЁ из инвентаря?", (confirmed) => {
+            
+            const limit = gameState.bulkSellLimit;
+            let toSell = [];
+            let toKeep = [];
+
+            if (limit === "all") {
+                toSell = [...gameState.inventory];
+            } else {
+                const maxWeight = parseInt(limit, 10);
+                gameState.inventory.forEach(item => {
+                    if ((item.weight || 0) <= maxWeight) {
+                        toSell.push(item);
+                    } else {
+                        toKeep.push(item);
+                    }
+                });
+            }
+
+            if (toSell.length === 0) {
+                tg.showAlert("В инвентаре нет фраз, подходящих под текущий критерий утилизации.");
+                return;
+            }
+
+            let totalIncome = 0;
+            toSell.forEach(item => totalIncome += item.price);
+
+            let confirmMsg = `Вы точно хотите продать выбранные фразы (${toSell.length} шт.) за ${totalIncome} 💰?`;
+            if (limit === "all") confirmMsg = "ВНИМАНИЕ! Вы точно хотите полностью очистить инвентарь и продать ВСЁ?";
+
+            tg.showConfirm(confirmMsg, (confirmed) => {
                 if (confirmed) {
                     AudioFX.playSell();
-                    let totalIncome = 0;
-                    gameState.inventory.forEach(item => totalIncome += item.price);
                     gameState.balance += totalIncome;
-                    gameState.inventory = [];
-                    renderInventory(); updateUI(); saveGame();
+                    gameState.inventory = toKeep;
+                    renderInventory(); 
+                    updateUI(); 
+                    saveGame();
                 }
             });
         }
 
-        // ЗАГРУЗКА И СБОРКА ТАБЛИЦЫ ЛИДЕРОВ (ДОБАВЛЕН БАН КЭША)
         function loadLeaderboardData() {
             const container = document.getElementById('leaderboardContainer');
-            container.innerHTML = `<div style="color: #4e5564; margin-top: 20px; font-size: 13px;">Синхронизация с базой данных...</div>`;
+            container.innerHTML = `<div style="color: #4e5564; margin-top: 30px; font-size: 13px;">Загрузка квантовых сигналов...</div>`;
             
-            // ?t=Date.now() заставляет скрипт всегда отдавать свежую инфу вместо кэша браузера
-            fetch(DATABASE_URL + "?t=" + Date.now(), {
-                method: "POST",
-                headers: { "Content-Type": "text/plain" },
+            fetch(DATABASE_URL, {
+                method: "POST", headers: { "Content-Type": "text/plain" },
                 body: JSON.stringify({ action: "leaderboard" })
             })
             .then(res => res.json())
             .then(data => {
-                if (data.status === "success" && data.leaderboard) {
+                if(data.status === "success" && data.leaderboard) {
                     container.innerHTML = "";
-                    if (data.leaderboard.length === 0) {
-                        container.innerHTML = `<div style="color: #4e5564; margin-top: 20px; font-size: 13px;">Рейтинг пуст</div>`;
-                        return;
-                    }
+                    const myId = (tg.initDataUnsafe?.user?.id || 12345).toString();
+                    
                     data.leaderboard.forEach((user, index) => {
-                        const rank = index + 1;
-                        let rankClass = "";
-                        if (rank === 1) rankClass = "rank-1";
-                        if (rank === 2) rankClass = "rank-2";
-                        if (rank === 3) rankClass = "rank-3";
+                        const div = document.createElement('div');
+                        const isMe = user.user_id.toString() === myId;
+                        div.className = `leaderboard-item ${isMe ? 'me' : ''}`;
                         
-                        const itemDiv = document.createElement('div');
-                        itemDiv.className = 'lead-item';
-                        itemDiv.innerHTML = `
-                            <div class="lead-rank ${rankClass}">#${rank}</div>
-                            <div class="lead-name">${user.username}</div>
-                            <div class="lead-bal">${Math.floor(user.balance).toLocaleString('ru-RU')} 💰</div>
+                        let rankClass = "";
+                        if(index === 0) rankClass = "top1";
+                        else if(index === 1) rankClass = "top2";
+                        else if(index === 2) rankClass = "top3";
+                        
+                        div.innerHTML = `
+                            <div style="display: flex; align-items: center; gap: 14px;">
+                                <div class="rank-badge ${rankClass}">${index + 1}</div>
+                                <div style="text-align: left;">
+                                    <div style="font-weight: 800; font-size: 15px; color: ${isMe ? 'var(--accent-gold)' : '#fff'}">
+                                        ${user.username} ${isMe ? ' (Вы)' : ''}
+                                    </div>
+                                    <div style="font-size: 11px; color: #4e5564; margin-top: 2px;">ID: ${user.user_id}</div>
+                                </div>
+                            </div>
+                            <div style="font-weight: 800; color: var(--accent-gold); font-size: 15px;">
+                                ${Math.floor(user.balance).toLocaleString('ru-RU')} 💰
+                            </div>
                         `;
-                        container.appendChild(itemDiv);
+                        container.appendChild(div);
                     });
                 } else {
-                    container.innerHTML = `<div style="color: #ff5c5c; margin-top: 20px; font-size: 13px;">Ошибка обработки данных</div>`;
+                    container.innerHTML = `<div style="color: #ff5c5c; margin-top: 30px; font-size: 13px;">Ошибка обработки матрицы лидеров</div>`;
                 }
             })
-            .catch(err => {
-                console.error(err);
-                container.innerHTML = `<div style="color: #ff5c5c; margin-top: 20px; font-size: 13px;">Ошибка подключения к серверу</div>`;
+            .catch(() => {
+                container.innerHTML = `<div style="color: #ff5c5c; margin-top: 30px; font-size: 13px;">Ошибка синхронизации с базой данных</div>`;
             });
         }
 
