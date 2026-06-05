@@ -456,7 +456,7 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const DATABASE_URL = "https://script.google.com/macros/s/AKfycbxKRnV7HsBX7TN3iKIiyU0_h4qYkz2jEVOokEBAb9YThHOviMpGAKlMHw-pVIwFKqqM/exec"; 
+        const DATABASE_URL = "https://script.google.com/macros/s/AKfycbwgLV--Q71Z1m5WgWs0TKgN51ev4IyTbriO7X_NWh16D51BnwddUB6WqTJ_XFH4xZHU/exec"; 
 
         let currentActiveTab = 'main';
         let currentDrop = null;
@@ -1080,12 +1080,13 @@
             });
         }
 
-        // НОВЫЙ МЕТОД: ЗАГРУЗКА И СБОРКА ТАБЛИЦЫ ЛИДЕРОВ
+        // ЗАГРУЗКА И СБОРКА ТАБЛИЦЫ ЛИДЕРОВ (ДОБАВЛЕН БАН КЭША)
         function loadLeaderboardData() {
             const container = document.getElementById('leaderboardContainer');
             container.innerHTML = `<div style="color: #4e5564; margin-top: 20px; font-size: 13px;">Синхронизация с базой данных...</div>`;
             
-            fetch(DATABASE_URL, {
+            // ?t=Date.now() заставляет скрипт всегда отдавать свежую инфу вместо кэша браузера
+            fetch(DATABASE_URL + "?t=" + Date.now(), {
                 method: "POST",
                 headers: { "Content-Type": "text/plain" },
                 body: JSON.stringify({ action: "leaderboard" })
