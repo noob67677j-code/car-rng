@@ -637,7 +637,7 @@
             bulkSellLimit: "75"
         };
 
-        const upgradeConfig = { baseCost: 100, factor: 1.5 };
+        const upgradeConfig = { baseCost: 100, factor: 1.15 };
 
         function triggerScreenShake() {
             document.body.style.transform = `translate(${(Math.random()-0.5)*8}px, ${(Math.random()-0.5)*8}px) scale(0.99)`;
@@ -962,15 +962,15 @@
 
         function buyUpgrade(type) {
             if(type === 'luck') {
-                let cost = Math.floor(upgradeConfig.baseCost * 1.25 * Math.pow(upgradeConfig.factor, gameState.luckLevel));
+                let cost = Math.floor(upgradeConfig.baseCost * 1.15 * Math.pow(upgradeConfig.factor, gameState.luckLevel));
                 if (gameState.balance >= cost) {
                     AudioFX.playEpicWin();
                     gameState.balance -= cost;
                     gameState.luckLevel++;
                 }
             } else if(type === 'speed') {
-                let cost = Math.floor(upgradeConfig.baseCost * 1.8 * Math.pow(upgradeConfig.factor, gameState.speedLevel));
-                if (gameState.balance >= cost && gameState.speedLevel < 4) { 
+                let cost = Math.floor(upgradeConfig.baseCost * 1.24 * Math.pow(upgradeConfig.factor, gameState.speedLevel));
+                if (gameState.balance >= cost && gameState.speedLevel < 8) { 
                     AudioFX.playEpicWin();
                     gameState.balance -= cost;
                     gameState.speedLevel++;
